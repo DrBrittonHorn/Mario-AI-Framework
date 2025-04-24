@@ -18,8 +18,14 @@ import engine.core.MarioTimer;
 public class LevelGenerator implements MarioLevelGenerator {
     private int sampleWidth = 0;
     private int sampleHeight = 0;
+    private int windowHeight = 0;
+    private int windowWidth = 0;
+    private Map<Integer, int[][]> tileIdToMatrix = new HashMap<>();
+    private Map<String, Integer> matrixToTileId = new HashMap<>();
+    private int nextTileId = 0;
     private String fileName = "";
     private String folderName = "levels/original/";
+    private int[][] origData;
     private int[][] tiles;
     private Map<Integer, Map<Integer, Set<Integer>>> adjacencyMap = new HashMap<>();
     private int up=0, down=2, left=3, right=1;
@@ -39,8 +45,14 @@ public class LevelGenerator implements MarioLevelGenerator {
         this.folderName = sampleFolder;
     }
     public LevelGenerator(String sampleFolder, String sampleFile) {
+        this(sampleFolder, sampleFile, 1,1);
+    }
+
+    public LevelGenerator(String sampleFolder, String sampleFile, int windowHeight, int windowWidth) {
         this.fileName = sampleFile;
         this.folderName = sampleFolder;
+        this.windowHeight = windowHeight;
+        this.windowWidth = windowWidth;
     }
 
     private String getRandomLevel() {
@@ -80,15 +92,31 @@ public class LevelGenerator implements MarioLevelGenerator {
         String[] lines = levelString.split("\n");
         sampleWidth = lines[0].length();
         sampleHeight = lines.length;
-        tiles = new int[sampleHeight][sampleWidth];
-        for (int i = 0; i < sampleHeight; i++) {
-            for (int j = 0; j < sampleWidth; j++) {
-                tiles[i][j] = lines[i].charAt(j);
+        origData = new int[sampleHeight][sampleWidth];
+        tiles = new int[sampleHeight-windowHeight+1][sampleWidth-windowWidth+1];
+        System.out.println("Sample level size: " + sampleHeight + "x" + sampleWidth);
+        System.out.println("tile size: " + (sampleHeight-windowHeight+1) + "x" + (sampleWidth-windowWidth+1));
+        for (int i = 0; i <= sampleHeight - windowHeight; i++) {
+            for (int j = 0; j <= sampleWidth - windowWidth; j++) {
+                origData[i][j] = lines[i].charAt(j);
+                //if (origData[i][j] != 45) System.out.println("origData[" + i + "][" + j + "] = " + origData[i][j]);
             }
         }
     }
 
     private void calculateAdjacencies() {
+        for (int i = 0; i < tiles.length; i++) {
+            for (int j = 0; j < tiles[0].length; j++) {
+                int[][] matrix = getMatrix(i, j);
+                String maxtrixString = matrixToString(matrix);
+                if (!matrixToTileId.containsKey(maxtrixString)) {
+                    matrixToTileId.put(maxtrixString, nextTileId);
+                    tileIdToMatrix.put(nextTileId, matrix);
+                    nextTileId++;
+                }
+                tiles[i][j] = matrixToTileId.get(maxtrixString);
+            }
+        }
         for (int i = 0; i < sampleHeight; i++) {
             for (int j = 0; j < sampleWidth; j++) {
                 adjacencyMap.putIfAbsent(tiles[i][j], new HashMap<Integer,Set<Integer>>());
@@ -115,6 +143,40 @@ public class LevelGenerator implements MarioLevelGenerator {
                 }
             }
         }
+    }
+
+    // Get matrix for a given range
+    private int[][] getMatrix(int y, int x) {
+        int[][] matrix = new int[windowHeight][windowWidth];
+        for (int i = 0; i < windowHeight; i++) {
+            for (int j = 0; j < windowWidth; j++) {
+                matrix[i][j] = origData[y + i][x + j];
+            }
+        }
+        return matrix;
+    }
+
+    // Add a mapping between a matrix and a tile ID
+    private String matrixToString(int[][] matrix) {
+        StringBuilder sb = new StringBuilder();
+        for (int[] row : matrix) {
+            for (int cell : row) {
+                sb.append(cell).append(",");
+            }
+            sb.append(";");
+        }
+        return sb.toString();
+    }
+
+    // Retrieve a matrix by tile ID
+    private int[][] getMatrixByTileId(int tileId) {
+        return tileIdToMatrix.get(tileId);
+    }
+
+    // Retrieve a tile ID by matrix
+    private int getTileIdByMatrix(int[][] matrix) {
+        String matrixKey = matrixToString(matrix);
+        return matrixToTileId.getOrDefault(matrixKey, -1); // Return -1 if not found
     }
 
     private void printAllAdjacencies(){
