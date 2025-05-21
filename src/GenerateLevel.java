@@ -23,7 +23,7 @@ public class GenerateLevel {
 
     public static void main(String[] args) {
         //MarioLevelGenerator generator = new levelGenerators.notch.LevelGenerator();
-        MarioLevelGenerator generator = new levelGenerators.WaveFunctionCollapse.LevelGenerator("levels/testLevels/", "floating-box.txt");
+        MarioLevelGenerator generator = new levelGenerators.WaveFunctionCollapse.LevelGenerator("levels/testLevels/", "floating-box.txt",2,2);
         String level = generator.getGeneratedLevel(new MarioLevelModel(150, 16), new MarioTimer(5 * 60 * 60 * 1000));
         MarioGame game = new MarioGame();
         // printResults(game.playGame(level, 200, 0));
