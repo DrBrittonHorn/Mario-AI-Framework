@@ -1,3 +1,4 @@
+package levelGenerators;
 import engine.core.MarioGame;
 import engine.core.MarioLevelGenerator;
 import engine.core.MarioLevelModel;
@@ -22,7 +23,7 @@ public class GenerateLevel {
     }
 
     public static void main(String[] args) {
-        MarioLevelGenerator generator = new levelGenerators.notch.LevelGenerator();
+        MarioLevelGenerator generator = new levelGenerators.ttWFC.LevelGenerator();
         String level = generator.getGeneratedLevel(new MarioLevelModel(150, 16), new MarioTimer(5 * 60 * 60 * 1000));
         MarioGame game = new MarioGame();
         // printResults(game.playGame(level, 200, 0));
