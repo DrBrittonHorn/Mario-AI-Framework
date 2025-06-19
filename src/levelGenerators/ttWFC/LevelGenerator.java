@@ -11,6 +11,7 @@ import engine.core.MarioLevelModel;
 import engine.core.MarioTimer;
 
 public class LevelGenerator implements MarioLevelGenerator {
+  
   @Override
   public String getGeneratorName() {
     return "ttWFC";
@@ -27,11 +28,16 @@ public class LevelGenerator implements MarioLevelGenerator {
       return blank.getMap();
     }
   }
+  
       public static String runAndGetLevel() throws Exception {
         File folder = new File("output");
         folder.mkdirs();
-        for (File f : folder.listFiles()) f.delete();
-
+        for (File f : folder.listFiles()) f.delete(); File outDir = new File("output");
+        if (outDir.exists()) {
+          for (File f : outDir.listFiles()) f.delete();
+        } else {
+          outDir.mkdirs();
+      }
         Random random = new Random();
         int seed = random.nextInt();
         String name = "lvl-13";
@@ -72,7 +78,7 @@ public class LevelGenerator implements MarioLevelGenerator {
         } while (!success);
 
         String outFile = "output/ttwfc_" + seed;
-        model.Save(outFile);
+        if(success) model.Save(outFile);
 
         byte[] bytes = Files.readAllBytes(Paths.get(outFile + ".txt"));
         return new String(bytes);

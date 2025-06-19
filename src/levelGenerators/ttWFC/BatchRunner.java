@@ -13,10 +13,10 @@ import java.util.Random;
 public class BatchRunner {
     public static void main(String[] args) throws Exception {
         String[] samples   = { "lvl-1", "lvl-2", "lvl-3", "lvl-4", "lvl-5", "lvl-6", "lvl-7", "lvl-8", "lvl-9", "lvl-10", "lvl-11", "lvl-12", "lvl-13", "lvl-14", "lvl-15"};
-        int[]    Ms        = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+        int[]    Ms        = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
         int[]    Ns        = { 1, 2, 3, 4, 5, 6, 7, 8 };
-        int      repeats   = 1;             // how many outputs repeats per MxN size and sample
-        int      maxAttempts = 2000;        // max WFC seeds to try per repeat 
+        int      repeats   = 4;  // how many outputs will be created per MxN size and sample
+        int      attemptsPerRepeat = 1250;     
         MarioGame game     = new MarioGame();
         try (PrintWriter csv = new PrintWriter(new FileWriter("ttwfc_results.csv"))) {
             csv.println("sample,M,N,seed,gameStatus,completion,lives,coins,time,jumps,kills");
@@ -26,18 +26,20 @@ public class BatchRunner {
                 List<String> lines = Files.readAllLines(
                   Paths.get("src/levelGenerators/ttWFC/samples/" + sample + ".txt")
                 );
-                int origW = lines.get(0).length();
-                int outH  = 16;
+                
 
                 for (int M : Ms) {
                     for (int N : Ns) {
-                        int outW = origW;
+                        int outW = lines.get(0).length();
+                        int outH  = 16;
+                        if(outW%M>0) outW += M - (outW % M);
+                        if(outH%N>0) outH += N - (outH % N);    
                         for (int r = 0; r < repeats; r++) {
                             boolean success = false;
                             int seed = -1;
                             OverlappingModel wfc = null;
 
-                            for (int attempt = 0; attempt < maxAttempts; attempt++) {
+                            for (int attempt = 0; attempt < attemptsPerRepeat; attempt++) {
                                 seed = rnd.nextInt();
                                 wfc = new OverlappingModel(
                                   sample, M, N, outW / M, outH / N,
@@ -57,13 +59,13 @@ public class BatchRunner {
                                 );
                                 csv.flush();
                                 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                                System.out.println("   AFTER " + maxAttempts + "ATTEMPTS WFC FAILED ON " + sample+ " ON Window M="+M+", N="+N);
+                                System.out.println("   AFTER " + attemptsPerRepeat + "ATTEMPTS WFC FAILED ON " + sample+ " ON Window M="+M+", N="+N);
                                 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                                 continue;
                             }
 
                             String tmp = "output/tmp-" + sample + "-M" + M + "-N" + N + "-s" + seed;
-                            wfc.Save(tmp);
+                            if(success) wfc.Save(tmp);
 
                             MarioLevelModel model = new MarioLevelModel(outW, outH);
                             model.copyFromString(new String(
