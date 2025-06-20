@@ -12,10 +12,10 @@ import java.util.Random;
 
 public class BatchRunner {
     public static void main(String[] args) throws Exception {
-        String[] samples   = { "lvl-1", "lvl-2", "lvl-3", "lvl-4", "lvl-5", "lvl-6", "lvl-7", "lvl-8", "lvl-9", "lvl-10", "lvl-11", "lvl-12", "lvl-13", "lvl-14", "lvl-15"};
-        int[]    Ms        = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
-        int[]    Ns        = { 1, 2, 3, 4, 5, 6, 7, 8 };
-        int      repeats   = 4;  // how many outputs will be created per MxN size and sample
+        String[] samples   = {"lvl-1", "lvl-2", "lvl-3", "lvl-4", "lvl-5", "lvl-6", "lvl-7", "lvl-8", "lvl-9", "lvl-10", "lvl-11", "lvl-12", "lvl-13", "lvl-14", "lvl-15"};
+        int[]    Ms        = { 1};
+        int[]    Ns        = { 1};
+        int      repeats   = 1000;  // how many outputs will be created per MxN size and sample
         int      attemptsPerRepeat = 1250;     
         MarioGame game     = new MarioGame();
         try (PrintWriter csv = new PrintWriter(new FileWriter("ttwfc_results.csv"))) {
@@ -53,11 +53,11 @@ public class BatchRunner {
                             }
 
                             if (!success) {
-                                csv.printf(
-                                  "%s,%d,%d,%d,FAIL,0.00,0,0,0,0,0%n",
-                                  sample, M, N, -1
-                                );
-                                csv.flush();
+                                // csv.printf(
+                                //   "%s,%d,%d,%d,FAIL,0.00,0,0,0,0,0%n",
+                                //   sample, M, N, -1
+                                // );
+                                // csv.flush();
                                 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                                 System.out.println("   AFTER " + attemptsPerRepeat + "ATTEMPTS WFC FAILED ON " + sample+ " ON Window M="+M+", N="+N);
                                 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -67,49 +67,43 @@ public class BatchRunner {
                             String tmp = "output/tmp-" + sample + "-M" + M + "-N" + N + "-s" + seed;
                             if(success) wfc.Save(tmp);
 
-                            MarioLevelModel model = new MarioLevelModel(outW, outH);
-                            model.copyFromString(new String(
-                              Files.readAllBytes(Paths.get(tmp + ".txt"))
-                            ));
-                            MarioResult res = game.runGame(
-                              new agents.robinBaumgarten.Agent(),
-                              model.getMap(),
-                              40, 0, true
-                            );
+                            // MarioLevelModel model = new MarioLevelModel(outW, outH);
+                            // model.copyFromString(new String(
+                            //   Files.readAllBytes(Paths.get(tmp + ".txt"))
+                            // ));
+                            // MarioResult res = game.runGame(
+                            //   new agents.robinBaumgarten.Agent(),
+                            //   model.getMap(),
+                            //   40, 0, true
+                            // );
 
-                            csv.printf(
-                              "%s,%d,%d,%d,%s,%.2f,%d,%d,%d,%d,%d%n",
-                              sample, M, N, seed,
-                              res.getGameStatus(),
-                              res.getCompletionPercentage(),
-                              res.getCurrentLives(),
-                              res.getCurrentCoins(),
-                              (int)Math.ceil(res.getRemainingTime() / 1000f),
-                              res.getNumJumps(),
-                              res.getKillsTotal()
-                            );
-                            csv.flush();
-                                    System.out.println("****************************************************************");
-                                    System.out.println("**SAMPLE: " + sample + ", M: " + M + ", N: " + N + "********");
-                                    System.out.println("****************************************************************");
-                                    System.out.println("Game Status: " + res.getGameStatus().toString() +
-                                            " Percentage Completion: " + res.getCompletionPercentage());
-                                    System.out.println("Lives: " + res.getCurrentLives() + " Coins: " + res.getCurrentCoins() +
-                                            " Remaining Time: " + (int) Math.ceil(res.getRemainingTime() / 1000f));
-                                    System.out.println("Mario State: " + res.getMarioMode() +
-                                            " (Mushrooms: " + res.getNumCollectedMushrooms() + " Fire Flowers: " + res.getNumCollectedFireflower() + ")");
-                                    System.out.println("Total Kills: " + res.getKillsTotal() + " (Stomps: " + res.getKillsByStomp() +
-                                            " Fireballs: " + res.getKillsByFire() + " Shells: " + res.getKillsByShell() +
-                                            " Falls: " + res.getKillsByFall() + ")");
-                                    System.out.println("Bricks: " + res.getNumDestroyedBricks() + " Jumps: " + res.getNumJumps() +
-                                            " Max X Jump: " + res.getMaxXJump() + " Max Air Time: " + res.getMaxJumpAirTime());
-                                    System.out.println("****************************************************************");
+                            // csv.printf(
+                            //   "%s,%d,%d,%d,%s,%.2f,%d,%d,%d,%d,%d%n",
+                            //   sample, M, N, seed,
+                            //   res.getGameStatus(),
+                            //   res.getCompletionPercentage(),
+                            //   res.getCurrentLives(),
+                            //   res.getCurrentCoins(),
+                            //   (int)Math.ceil(res.getRemainingTime() / 1000f),
+                            //   res.getNumJumps(),
+                            //   res.getKillsTotal()
+                            // );
+                            // csv.flush();
+                            // System.out.println("****************************************************************");
+                            // System.out.println("**SAMPLE: " + sample + ", M: " + M + ", N: " + N + "********");
+                            // System.out.println("****************************************************************");
+                            // System.out.println("Game Status: " + res.getGameStatus().toString() +" Percentage Completion: " + res.getCompletionPercentage());
+                            // System.out.println("Lives: " + res.getCurrentLives() + " Coins: " + res.getCurrentCoins() + " Remaining Time: " + (int) Math.ceil(res.getRemainingTime() / 1000f));
+                            // System.out.println("Mario State: " + res.getMarioMode() +" (Mushrooms: " + res.getNumCollectedMushrooms() + " Fire Flowers: " + res.getNumCollectedFireflower() + ")");
+                            // System.out.println("Total Kills: " + res.getKillsTotal() + " (Stomps: " + res.getKillsByStomp() + " Fireballs: " + res.getKillsByFire() + " Shells: " + res.getKillsByShell() + " Falls: " + res.getKillsByFall() + ")");
+                            // System.out.println("Bricks: " + res.getNumDestroyedBricks() + " Jumps: " + res.getNumJumps() + " Max X Jump: " + res.getMaxXJump() + " Max Air Time: " + res.getMaxJumpAirTime());
+                            // System.out.println("****************************************************************");
                         }
                     }
                 }
             }
 
-            System.out.println("Batch finished!  See ttwfc_results.csv");
+            System.out.println("Batch finished, see ttwfc_results.csv and outputs for output");
         }
     }
 }
