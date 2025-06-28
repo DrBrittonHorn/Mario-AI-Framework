@@ -17,8 +17,8 @@ public class Program {
 
         Random random = new Random();
         int seed = random.nextInt();
-        String name = "lvl-13";    
-        int M = 8;  
+        String name = "lvl-8";    
+        int M = 3;  
         int N = 3;
         //SET width = origSX to be same as input file
         List<String> lines = Files.readAllLines(Paths.get("src/levelGenerators/TTWFC/samples/" + name + ".txt"));

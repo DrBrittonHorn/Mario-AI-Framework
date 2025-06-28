@@ -82,7 +82,6 @@ abstract class Model
 
         Clear();
 
-        // had to add when changed to MxN
         if (!Propagate()) return false;
 
         Random random = new Random(seed);
@@ -200,6 +199,10 @@ abstract class Model
     void Ban(int i, int t)
     {
     if (!wave[i][t]) return;  
+    if (DEBUG) {
+        System.out.printf("Ban() → removing pattern %d at cell (%d,%d) [index %d],  was %d possibilities%n", t, i % MX, i / MX, i, sumsOfOnes[i] );
+    }
+
     wave[i][t] = false;
 
         int[] comp = compatible[i][t];
@@ -233,6 +236,7 @@ abstract class Model
             observed[i] = -1;
         }
 
+        if (DEBUG) dumpWave("before Clear()");
         observedSoFar = 0;
 
         // //FORCE MARIO AND FINISH
@@ -252,7 +256,7 @@ abstract class Model
             for (int y = 0; y < MY; y++) for (int t = 0; t < T; t++) if (!rightAllowed[t]) Ban((MX - 1) + y * MX, t);
             Propagate();   
         }
-
+        if (DEBUG) dumpWave("after Clear()");
     }
 
     public abstract void Save(String filename);
@@ -260,4 +264,36 @@ abstract class Model
     protected static int[] dx = { -1, 0, 1, 0 };
     protected static int[] dy = { 0, 1, 0, -1 };
     static int[] opposite = { 2, 3, 0, 1 };
+    private static final boolean DEBUG = false;   // turn off = silence all extra output
+
+
+    private void dumpWave(String title) {
+        if (!DEBUG) return;
+        System.out.println("\n── " + title + " ──");
+        for (int y = 0; y < MY; y++) {
+            for (int x = 0; x < MX; x++) {
+                int idx = x + y * MX;
+                System.out.printf("%3d", sumsOfOnes[idx]); // how many patterns still possible
+            }
+            System.out.println();
+        }
+    }
+
+
+    private void dumpCell(int idx) {
+        if (!DEBUG) return;
+        System.out.printf("cell (%d,%d)  remaining=%d  allowed: ",
+                idx % MX, idx / MX, sumsOfOnes[idx]);
+        for (int t = 0; t < T; t++) if (wave[idx][t]) System.out.print(t + " ");
+        System.out.println();
+    }
+
+
+    /** cheap sentinel that fires the moment a contradiction is detected. */
+    private void contradiction(int idx) {
+        System.out.println("\n‼ CONTRADICTION at (" + (idx % MX) + "," + (idx / MX) + ")");
+        dumpCell(idx);
+        dumpWave("state at contradiction");
+    }
+
 }
