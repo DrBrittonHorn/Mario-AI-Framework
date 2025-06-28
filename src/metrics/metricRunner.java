@@ -18,10 +18,10 @@ public class metricRunner {
     private static final Path ORIGINAL_DIR = Paths.get("levels", "original");
     // file pattern: tmp-lvl-<baseId>-M<M>-N<N>-s<seed>.txt
     private static final Pattern FILENAME = Pattern.compile(
-        "tmp-lvl-(\\d+)-M(\\d+)-N(\\d+)-s(\\d+)\\.txt"
+        "tmp-lvl-(\\d+)-M(\\d+)-N(\\d+)-s-?(\\d+)\\.txt"
     );
 
-    private static final String[] TARGET_SIZES  = { "1x1", /*"2x2", "3x3", */ "1x16", "6x6", "7x5", "14x6" };
+    private static final String[] TARGET_SIZES  = { "1x1", /*"2x2", "3x3", */ "1x16", "6x6", "7x5", "14x6", "15x2" };
     private static final String[] TARGET_LEVELS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15" };
 
     public static void main(String[] args) throws IOException {
