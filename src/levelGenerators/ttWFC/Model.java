@@ -190,6 +190,7 @@ abstract class Model
 
         for (int i = 0; i < sumsOfOnes.length; i++) {
             if (sumsOfOnes[i] == 0) {
+                contradiction(i);
                 return false;
             }
         }
@@ -199,10 +200,10 @@ abstract class Model
     void Ban(int i, int t)
     {
     if (!wave[i][t]) return;  
-    if (DEBUG) {
+    if (DEBUG && i<5) {
         System.out.printf("Ban() → removing pattern %d at cell (%d,%d) [index %d],  was %d possibilities%n", t, i % MX, i / MX, i, sumsOfOnes[i] );
     }
-
+    
     wave[i][t] = false;
 
         int[] comp = compatible[i][t];
@@ -216,6 +217,7 @@ abstract class Model
 
         double sum = sumsOfWeights[i];
         entropies[i] = Math.log(sum) - sumsOfWeightLogWeights[i] / sum;
+        
     }
 
     void Clear()
@@ -264,7 +266,7 @@ abstract class Model
     protected static int[] dx = { -1, 0, 1, 0 };
     protected static int[] dy = { 0, 1, 0, -1 };
     static int[] opposite = { 2, 3, 0, 1 };
-    private static final boolean DEBUG = false;   // turn off = silence all extra output
+    private static final boolean DEBUG = false;
 
 
     private void dumpWave(String title) {
@@ -273,7 +275,7 @@ abstract class Model
         for (int y = 0; y < MY; y++) {
             for (int x = 0; x < MX; x++) {
                 int idx = x + y * MX;
-                System.out.printf("%3d", sumsOfOnes[idx]); // how many patterns still possible
+                System.out.printf("%3d", sumsOfOnes[idx]); 
             }
             System.out.println();
         }
@@ -288,12 +290,9 @@ abstract class Model
         System.out.println();
     }
 
-
-    /** cheap sentinel that fires the moment a contradiction is detected. */
     private void contradiction(int idx) {
         System.out.println("\n‼ CONTRADICTION at (" + (idx % MX) + "," + (idx / MX) + ")");
         dumpCell(idx);
-        dumpWave("state at contradiction");
     }
 
 }
