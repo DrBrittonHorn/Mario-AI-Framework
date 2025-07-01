@@ -43,6 +43,9 @@ abstract class Model
 
     void Init()
     {
+        if (DEBUG) System.out.println("Initializing WFC model with " + MX + "x" + MY + 
+            " grid, M=" + M + ", N=" + N + ", periodic=" + 
+            periodic + ", heuristic=" + heuristic);
         wave = new boolean[MX * MY][];
         compatible = new int[wave.length][][];
         for (int i = 0; i < wave.length; i++)
@@ -81,6 +84,7 @@ abstract class Model
         if (wave == null) Init();
 
         Clear();
+        if (DEBUG) return false;
 
         if (!Propagate()) return false;
 
@@ -93,6 +97,8 @@ abstract class Model
             {
                 Observe(node, random);
                 boolean success = Propagate();
+                if (DEBUG) dumpCell(249);
+                if (DEBUG) dumpWave("after Observe/Propagate()");
                 if (!success) return false;
             }
             else
@@ -147,6 +153,7 @@ abstract class Model
         for (int t = 0; t < T; t++) distribution[t] = w[t] ? weights[t] : 0.0;
         double r1 = random.nextDouble();
         double r = Helper.Random(distribution, r1);
+        if (DEBUG) System.out.println("Observe() → observing cell " + node + "(" + (node % MX) + "," + (node / MX) + ") with pattern " + r);
         for (int t = 0; t < T; t++) if (w[t] != (t == r)) Ban(node, t);
     }
 
@@ -184,6 +191,13 @@ abstract class Model
 
                     comp[d]--;
                     if (comp[d] == 0) Ban(i2, t2);
+                    if (DEBUG) System.out.println("after propagate ban call with " + i2 + " and " + t2 + " because of " + i1 + " and " + t1);
+                }
+            }
+            for (int i = 0; i < sumsOfOnes.length; i++) {
+                if (sumsOfOnes[i] == 0) {
+                    contradiction(i);
+                    return false;
                 }
             }
         }
@@ -199,12 +213,12 @@ abstract class Model
 
     void Ban(int i, int t)
     {
-    if (!wave[i][t]) return;  
-    if (DEBUG && i<5) {
-        System.out.printf("Ban() → removing pattern %d at cell (%d,%d) [index %d],  was %d possibilities%n", t, i % MX, i / MX, i, sumsOfOnes[i] );
-    }
+        if (!wave[i][t]) return;  
+        if (DEBUG) {
+            System.out.printf("Ban() → removing pattern %d at cell (%d,%d) [index %d],  was %d possibilities%n", t, i % MX, i / MX, i, sumsOfOnes[i] );
+        }
     
-    wave[i][t] = false;
+        wave[i][t] = false;
 
         int[] comp = compatible[i][t];
         for (int d = 0; d < 4; d++) comp[d] = 0;
@@ -249,13 +263,16 @@ abstract class Model
         //BAN THEM EVERYWHERE ELSE
         for (int i = 0; i < MX*MY; i++) if (i != mPreobserveIndex) Ban(i, mPatternIndex);
         for (int i = 0; i < MX*MY; i++) if (i != fPreobserveIndex) Ban(i, fPatternIndex);
-
+        Propagate();
+        if (DEBUG) dumpWave("after m/f propagate");
+        if (DEBUG) return;
         if (ground) {
             //ground, top, left, right edge bans
             for (int x = 0; x < MX; x++) for (int t = 0; t < T; t++) if (!groundAllowed[t]) Ban(x + 0 * MX, t);
             for (int x = 0; x < MX; x++) for (int t = 0; t < T; t++) if (!topAllowed[t]) Ban(x + (MY - 1) * MX, t);
             for (int y = 0; y < MY; y++) for (int t = 0; t < T; t++) if (!leftAllowed[t]) Ban(0 + y * MX, t);
             for (int y = 0; y < MY; y++) for (int t = 0; t < T; t++) if (!rightAllowed[t]) Ban((MX - 1) + y * MX, t);
+            if (DEBUG) dumpWave("before ground propagate");
             Propagate();   
         }
         if (DEBUG) dumpWave("after Clear()");
@@ -266,7 +283,7 @@ abstract class Model
     protected static int[] dx = { -1, 0, 1, 0 };
     protected static int[] dy = { 0, 1, 0, -1 };
     static int[] opposite = { 2, 3, 0, 1 };
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
 
 
     private void dumpWave(String title) {
@@ -275,7 +292,17 @@ abstract class Model
         for (int y = 0; y < MY; y++) {
             for (int x = 0; x < MX; x++) {
                 int idx = x + y * MX;
-                System.out.printf("%3d", sumsOfOnes[idx]); 
+                if (sumsOfOnes[idx] < 5) {
+                    System.out.print("[");
+                    for (int t = 0; t < T; t++) {
+                        if (wave[idx][t]) {
+                            System.out.print(" " + t + " ");
+                        }
+                    }
+                    System.out.print("]");
+                } else {
+                    System.out.printf("%3d", sumsOfOnes[idx]); 
+                }
             }
             System.out.println();
         }

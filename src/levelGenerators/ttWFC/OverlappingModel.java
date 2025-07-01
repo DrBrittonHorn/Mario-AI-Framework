@@ -121,7 +121,19 @@ public class OverlappingModel extends Model
                     }
                 }
             }
-            
+          
+        System.out.println("Printing tile patterns:");
+        System.out.println("Total patterns found: " + tilePatterns.size());
+        System.out.println("Total patterns in sample: " + tiles.size());
+        for (int i = 0; i < tilePatterns.size(); i++) {
+            char[] p = tilePatterns.get(i);
+            System.out.print("Pattern " + i + ":");
+            for (int j = 0; j < p.length; j++) {
+                System.out.print(p[j]);
+            }
+            System.out.println();
+        }
+
         this.patternToSample = patternToSampleList.stream().mapToInt(i->i).toArray();
         weights = new double[weightList.size()];
         for (int i = 0; i < weightList.size(); i++) {
@@ -183,6 +195,7 @@ public class OverlappingModel extends Model
         topAllowed   = new boolean[T];
         leftAllowed  = new boolean[T];
         rightAllowed = new boolean[T];
+        //boolean [][] allowed = new boolean[4][T];
 
         for (int idx = 0; idx < tileSample.length; idx++) {
             int x = idx % tileCols, y = idx / tileCols;
@@ -191,6 +204,7 @@ public class OverlappingModel extends Model
                 for (int d = 0; d < 4; d++) {
                     int nx = x + dx[d], ny = y + dy[d];
                     if (nx < 0 || nx >= tileCols || ny < 0 || ny >= tileRows) {
+                        //allowed[d][p] = true;
                         switch (d) {
                             case 0:
                                 leftAllowed[p] = true;
@@ -209,7 +223,10 @@ public class OverlappingModel extends Model
                 }
             }
         }
-
+        printAllowed("ground", groundAllowed);
+        printAllowed("top", topAllowed);
+        printAllowed("left", leftAllowed);
+        printAllowed("right", rightAllowed);
         propagator = new int[4][][];
         for (int d = 0; d < 4; d++)
         {
@@ -233,6 +250,8 @@ public class OverlappingModel extends Model
                 propagator[d][t] = arr;
             }
         }
+
+        printPropagator();
 
     }
     @Override
@@ -424,12 +443,29 @@ public class OverlappingModel extends Model
     //         System.out.println();
     //     }
     // }
-    // private void printAllowed(String name, boolean[] allowed) {
-    //     System.out.print(name + "Allowed patterns: ");
-    //     for (int t = 0; t < allowed.length; t++) {
-    //         if (allowed[t]) System.out.print(t + " ");
-    //     }
-    //     System.out.println();
-    // }
+    private void printAllowed(String name, boolean[] allowed) {
+        System.out.print(name + "Allowed patterns: ");
+        for (int t = 0; t < allowed.length; t++) {
+            if (allowed[t]) System.out.print(t + " ");
+        }
+        System.out.println();
+    }
+
+    private void printPropagator() {
+        System.out.println("\n── Propagator ──");
+        for (int t = 0; t < T; t++) {
+            for (int d = 0; d < 4; d++) {
+                System.out.print("Direction " + d + " for pattern " + t + ": ");
+                if (propagator[d][t].length == 0) {
+                    System.out.print("[]");
+                } else {
+                    for (int p : propagator[d][t]) {
+                        System.out.print(p + " ");
+                    }
+                }
+                System.out.println();
+            }
+        }
+    }
 
 }

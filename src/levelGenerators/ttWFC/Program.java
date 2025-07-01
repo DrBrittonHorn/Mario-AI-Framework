@@ -34,7 +34,8 @@ public class Program {
         Model.Heuristic heuristic = Model.Heuristic.Entropy;
 
         Model model = new OverlappingModel(
-            name, M, N, width/M, height/N,
+            // name, M, N, width/M, height/N,
+            name, M, N, 30/M, 16/N,
             periodicInput, periodic,
             symmetry, ground,
             heuristic
@@ -42,10 +43,10 @@ public class Program {
 
         // - run single time
         boolean success = model.Run(seed, -1);
-        // if (!success) {
-        //     System.out.println("WFC failed (contradiction) on lvl-1.txt");
-        //     return;
-        // }
+        if (!success) {
+            System.out.println("WFC failed (contradiction) on lvl-8.txt");
+            return;
+        }
         // -
 
         // - run till success
