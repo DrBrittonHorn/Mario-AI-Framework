@@ -34,8 +34,8 @@ public class Program {
         Model.Heuristic heuristic = Model.Heuristic.Entropy;
 
         Model model = new OverlappingModel(
-            // name, M, N, width/M, height/N,
-            name, M, N, 30/M, 16/N,
+            name, M, N, Math.max(width/M, (width+(M-1))/M), Math.max(height/N, (height+(N-1))/N),
+            //name, M, N, 54/M, 18/N, // this needs to be rounded up to nearest int division
             periodicInput, periodic,
             symmetry, ground,
             heuristic

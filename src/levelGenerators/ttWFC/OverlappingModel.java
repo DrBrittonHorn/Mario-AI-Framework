@@ -34,6 +34,10 @@ public class OverlappingModel extends Model
         // ADD PADDING TO MAKE aINPUT FIT N
         int padCols = (M - (origSX % M)) % M;  
         int padRows = (N - (origSY % N)) % N; 
+        System.out.println("Original size: " + origSX + "x" + origSY);
+        System.out.println("Target size: " + width + "x" + height);
+        System.out.println("Padding to fit MxN: " + M + "x" + N);
+        System.out.println("Padding cols: " + padCols + ", padding rows: " + padRows);
         this.padCols = padCols;
         this.padRows = padRows;
         String emptyCharacter = "-";
@@ -74,8 +78,9 @@ public class OverlappingModel extends Model
                 if (k==tiles.size()) tiles.add(tile);
                 int flatInd = x + y * tileCols;
                 tileSample[flatInd] = k;
-
+                System.out.printf("%2d ",k ); // print original input as tiles
             }
+            System.out.println();
         }
         
         this.tileSample = tileSample;
@@ -454,17 +459,26 @@ public class OverlappingModel extends Model
     private void printPropagator() {
         System.out.println("\n── Propagator ──");
         for (int t = 0; t < T; t++) {
+            System.out.print("Pattern " + t + ": ");
             for (int d = 0; d < 4; d++) {
-                System.out.print("Direction " + d + " for pattern " + t + ": ");
+                String dirName = switch (d) {
+                    case 0 -> "left";
+                    case 1 -> "top";
+                    case 2 -> "right";
+                    case 3 -> "ground";
+                    default -> throw new IllegalStateException("Unexpected value: " + d);
+                };
+                System.out.print(dirName + "[");
                 if (propagator[d][t].length == 0) {
-                    System.out.print("[]");
+                    System.out.print(" ");
                 } else {
                     for (int p : propagator[d][t]) {
                         System.out.print(p + " ");
                     }
                 }
-                System.out.println();
+                System.out.print("] ");
             }
+            System.out.println();
         }
     }
 

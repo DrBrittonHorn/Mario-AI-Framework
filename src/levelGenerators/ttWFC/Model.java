@@ -84,7 +84,7 @@ abstract class Model
         if (wave == null) Init();
 
         Clear();
-        if (DEBUG) return false;
+        // if (DEBUG) return false;
 
         if (!Propagate()) return false;
 
@@ -97,7 +97,6 @@ abstract class Model
             {
                 Observe(node, random);
                 boolean success = Propagate();
-                if (DEBUG) dumpCell(249);
                 if (DEBUG) dumpWave("after Observe/Propagate()");
                 if (!success) return false;
             }
@@ -191,7 +190,7 @@ abstract class Model
 
                     comp[d]--;
                     if (comp[d] == 0) Ban(i2, t2);
-                    if (DEBUG) System.out.println("after propagate ban call with " + i2 + " and " + t2 + " because of " + i1 + " and " + t1);
+                    //if (DEBUG) System.out.println("after propagate ban call cell (" + (x2) + "," + (y2) + ") with pattern " + t2 + " because of (" + (x1) + "," + (y1) + ") with pattern " + t1);
                 }
             }
             for (int i = 0; i < sumsOfOnes.length; i++) {
@@ -214,9 +213,9 @@ abstract class Model
     void Ban(int i, int t)
     {
         if (!wave[i][t]) return;  
-        if (DEBUG) {
-            System.out.printf("Ban() → removing pattern %d at cell (%d,%d) [index %d],  was %d possibilities%n", t, i % MX, i / MX, i, sumsOfOnes[i] );
-        }
+        // if (DEBUG) {
+        //     System.out.printf("Ban() → removing pattern %d at cell (%d,%d) [index %d],  was %d possibilities%n", t, i % MX, i / MX, i, sumsOfOnes[i] );
+        // }
     
         wave[i][t] = false;
 
@@ -256,16 +255,20 @@ abstract class Model
         observedSoFar = 0;
 
         // //FORCE MARIO AND FINISH
+        System.out.println("Preobserving Mario and Finish patterns at cell (" + (mPreobserveIndex % MX) + "," + (mPreobserveIndex / MX) + ") and (" + (fPreobserveIndex % MX) + "," + (fPreobserveIndex / MX) + ")");
+        System.out.println();
         for (int t = 0; t < T; t++) if (t != mPatternIndex) Ban(mPreobserveIndex, t);
         for (int t = 0; t < T; t++) if (t != fPatternIndex) Ban(fPreobserveIndex, t);
-        
+        System.out.println("********* POST BAN *********");
+        Propagate();
+        if (DEBUG) dumpCompleteWave("after m/f propagate");
 
         //BAN THEM EVERYWHERE ELSE
         for (int i = 0; i < MX*MY; i++) if (i != mPreobserveIndex) Ban(i, mPatternIndex);
         for (int i = 0; i < MX*MY; i++) if (i != fPreobserveIndex) Ban(i, fPatternIndex);
         Propagate();
-        if (DEBUG) dumpWave("after m/f propagate");
-        if (DEBUG) return;
+        if (DEBUG) dumpWave("after else m/f propagate");
+        //if (DEBUG) return;
         if (ground) {
             //ground, top, left, right edge bans
             for (int x = 0; x < MX; x++) for (int t = 0; t < T; t++) if (!groundAllowed[t]) Ban(x + 0 * MX, t);
@@ -273,7 +276,31 @@ abstract class Model
             for (int y = 0; y < MY; y++) for (int t = 0; t < T; t++) if (!leftAllowed[t]) Ban(0 + y * MX, t);
             for (int y = 0; y < MY; y++) for (int t = 0; t < T; t++) if (!rightAllowed[t]) Ban((MX - 1) + y * MX, t);
             if (DEBUG) dumpWave("before ground propagate");
-            Propagate();   
+            Propagate();
+            
+            /* for each location,
+             * for each direction,
+             * for each tile,
+                * if tile has no neighbor in that direction AND direction is in bounds
+                * ban tile from that location
+             */
+            for (int y = 0; y < MY; y++) {
+                for (int x = 0; x < MX; x++) {
+                    int idx = x + y * MX;
+                    for (int d = 0; d < 4; d++) {
+                        int nx = x + dx[d];
+                        int ny = y + dy[d];
+                        int nidx = nx + ny * MX;
+                        if (nidx < 0 || nidx >= MX * MY || nx < 0 || ny < 0 || nx >= MX || ny >= MY) continue;
+                        for (int t = 0; t < T; t++) {
+                            if (propagator[d][t].length == 0 && wave[idx][t]) {
+                                if (DEBUG) System.out.printf("Banning tile %d at (%d,%d) because no neighbor in direction %d%n", t, x, y, d);
+                                Ban(idx, t);
+                            }
+                        }
+                    }
+                }
+            }
         }
         if (DEBUG) dumpWave("after Clear()");
     }
@@ -308,6 +335,23 @@ abstract class Model
         }
     }
 
+private void dumpCompleteWave(String title) {
+        if (!DEBUG) return;
+        System.out.println("\n── " + title + " ──");
+        for (int y = 0; y < MY; y++) {
+            for (int x = 0; x < MX; x++) {
+                int idx = x + y * MX;
+                System.out.print("[");
+                for (int t = 0; t < T; t++) {
+                    if (wave[idx][t]) {
+                        System.out.print(" " + t + " ");
+                    }
+                }
+                System.out.print("]");
+            }
+            System.out.println();
+        }
+    }
 
     private void dumpCell(int idx) {
         if (!DEBUG) return;
