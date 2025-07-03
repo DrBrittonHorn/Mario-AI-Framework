@@ -461,13 +461,23 @@ public class OverlappingModel extends Model
         for (int t = 0; t < T; t++) {
             System.out.print("Pattern " + t + ": ");
             for (int d = 0; d < 4; d++) {
-                String dirName = switch (d) {
-                    case 0 -> "left";
-                    case 1 -> "top";
-                    case 2 -> "right";
-                    case 3 -> "ground";
-                    default -> throw new IllegalStateException("Unexpected value: " + d);
-                };
+            String dirName;
+            switch (d) {
+                case 0:
+                    dirName = "left";
+                    break;
+                case 1:
+                    dirName = "top";
+                    break;
+                case 2:
+                    dirName = "right";
+                    break;
+                case 3:
+                    dirName = "ground";
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + d);
+            }
                 System.out.print(dirName + "[");
                 if (propagator[d][t].length == 0) {
                     System.out.print(" ");

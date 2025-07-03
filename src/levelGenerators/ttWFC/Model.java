@@ -310,7 +310,7 @@ abstract class Model
     protected static int[] dx = { -1, 0, 1, 0 };
     protected static int[] dy = { 0, 1, 0, -1 };
     static int[] opposite = { 2, 3, 0, 1 };
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
 
     private void dumpWave(String title) {
