@@ -7,10 +7,16 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.*;
 import java.util.zip.Deflater;
+import java.awt.geom.Point2D;
 
 public class metricRunner {
 
@@ -21,7 +27,7 @@ public class metricRunner {
         "tmp-lvl-(\\d+)-M(\\d+)-N(\\d+)-s-?(\\d+)\\.txt"
     );
 
-    private static final String[] TARGET_SIZES  = { "1x1", /*"2x2", "3x3", */ "1x16", "6x6", "7x5", "14x6", "15x2" };
+    private static final String[] TARGET_SIZES  = { "1x1", "2x2", "3x3", "1x16", "6x6", "7x5", "14x6", "15x2" };
     private static final String[] TARGET_LEVELS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15" };
 
     public static void main(String[] args) throws IOException {
@@ -67,6 +73,13 @@ public class metricRunner {
             double completionPct = runAgentOnLevel(lvlPath);
             System.out.printf("   agent completion = %.2f%%%n", completionPct);
             writeCsvRecord( baseLevelId, M, N, seed, "completionPct", String.format("%.2f", completionPct));
+            double dens = runPatternDensity(lvlPath, M, N);
+            writeCsvRecord(baseLevelId, M, N, seed, "patternDensity", String.format("%.4f", dens));
+            double var  = runPatternVariationEntropy(lvlPath, M, N); 
+            writeCsvRecord(baseLevelId, M, N, seed, "patternVariation", String.format("%.4f", var));
+            double slope = runLinearity(lvlPath);
+            writeCsvRecord(baseLevelId, M, N, seed, "linearitySlope",
+            Double.isNaN(slope) ? "NaN" : String.format("%.4f", slope));
         } catch (IOException e) {
             System.err.println("failed: " + e.getMessage());
         }
@@ -137,6 +150,120 @@ public class metricRunner {
         } finally {
             compressor.end();
         }
+    }
+    private static List<String> extractPatterns(List<String> lines, int M, int N) {
+        int rows  = lines.size();
+        int cols  = lines.get(0).length();
+
+        List<String> patterns = new ArrayList<>();
+        for (int y = 0; y <= rows - N; y++) {
+            for (int x = 0; x <= cols - M; x++) {
+                StringBuilder sb = new StringBuilder(M * N);
+                for (int dy = 0; dy < N; dy++) {
+                    sb.append(lines.get(y + dy), x, x + M); 
+                }
+                patterns.add(sb.toString());
+            }
+        }
+        return patterns;
+    }
+
+    public static double runPatternDensity(Path lvlPath, int M, int N) throws IOException {
+        List<String> lines = Files.readAllLines(lvlPath);
+        List<String> patterns = extractPatterns(lines, M, N);
+
+        if (patterns.isEmpty()) return 0.0;
+
+        Map<String,Integer> freq = new HashMap<>();
+        for (String p : patterns) freq.merge(p, 1, Integer::sum);
+
+        int total = patterns.size();
+        int max   = Collections.max(freq.values());  
+        return (total - max) / (double) total;
+    }
+
+    public static double runPatternVariationEntropy(Path lvlPath, int M, int N) throws IOException {
+        List<String> lines = Files.readAllLines(lvlPath);
+        List<String> patterns = extractPatterns(lines, M, N);
+
+        if (patterns.isEmpty()) return 0.0;
+
+        Map<String,Integer> freq = new HashMap<>();
+        for (String p : patterns) freq.merge(p, 1, Integer::sum);
+
+        double total = patterns.size();
+        double H = 0.0;
+        for (int c : freq.values()) {
+            double p = c / total;
+            H -= p * (Math.log(p) / Math.log(2));  
+        }
+        return H;                                
+    }
+
+    public static double runPatternVariationRatio(Path lvlPath, int M, int N) throws IOException {
+        List<String> lines = Files.readAllLines(lvlPath);
+        List<String> patterns = extractPatterns(lines, M, N);
+
+        if (patterns.isEmpty()) return 0.0;
+        long unique = patterns.stream().distinct().count();
+        return unique / (double) patterns.size();     
+    }
+
+    private static final Set<Character> PLATFORM_TILES = Set.of('X','#','S','C','L','U','@','!','2','1','D','o','t','T','*','|','%');
+    private static final Set<Character> ENEMY_TILES = Set.of('g','G','r','R','k','K','y','Y');
+    private static boolean isEmpty(char ch)         { return ch == '-' || ENEMY_TILES.contains(ch); }
+    private static boolean isPlatformTile(char ch)  { return PLATFORM_TILES.contains(ch); }
+
+    private static List<Point2D.Double> collectPlatformCenters(List<String> lines) {
+
+        int rows = lines.size();
+        int cols = lines.get(0).length();
+        List<Point2D.Double> pts = new ArrayList<>();
+        for (int fileRow = 0; fileRow < rows; fileRow++) {
+
+            String row      = lines.get(fileRow);
+            String rowAbove = (fileRow == 0) ? null : lines.get(fileRow - 1);
+
+            int col = 0;
+            while (col < cols) {
+                boolean qualifies = isPlatformTile(row.charAt(col)) && (rowAbove == null || isEmpty(rowAbove.charAt(col)));
+                if (!qualifies) { col++; continue; }
+                int start = col;
+                while (col < cols) {
+                    char c = row.charAt(col);
+                    boolean ok = isPlatformTile(c) &&
+                                (rowAbove == null || isEmpty(rowAbove.charAt(col)));
+                    if (!ok) break;   
+                    col++;
+                }
+                int end = col - 1;  
+                double xMid = (start + end) / 2.0;
+                double yVal = (rows - 1 - fileRow); 
+                pts.add(new Point2D.Double(xMid, yVal));
+            }
+        }
+        return pts;
+    }
+
+    public static double runLinearity(Path lvlPath) throws IOException {
+
+        List<String> lines = Files.readAllLines(lvlPath);
+        List<Point2D.Double> pts = collectPlatformCenters(lines);
+
+        int n = pts.size();
+        if (n < 2) return Double.NaN;     
+
+        double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+        for (Point2D.Double p : pts) {
+            sumX  += p.x;
+            sumY  += p.y;
+            sumXY += p.x * p.y;
+            sumX2 += p.x * p.x;
+        }
+        double denom = n * sumX2 - sumX * sumX;
+        if (denom == 0) return Double.NaN;      
+
+        return (n * sumXY - sumX * sumY) / denom;
     }
     
     private static void writeCsvRecord(
