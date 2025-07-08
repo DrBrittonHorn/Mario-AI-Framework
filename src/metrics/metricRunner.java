@@ -24,7 +24,7 @@ public class metricRunner {
     private static final Path ORIGINAL_DIR = Paths.get("levels", "original");
     // file pattern: tmp-lvl-<baseId>-M<M>-N<N>-s<seed>.txt
     private static final Pattern FILENAME = Pattern.compile(
-        "tmp-lvl-(\\d+)-M(\\d+)-N(\\d+)-s-?(\\d+)\\.txt"
+        "tmp-lvl-([\\dA-Za-z]+)-M(\\d+)-N(\\d+)-s-?(\\d+)\\.txt"
     );
 
     private static final String[] TARGET_SIZES  = { "1x1", "2x2", "3x3", "1x16", "6x6", "7x5", "14x6", "15x2" };
@@ -77,9 +77,9 @@ public class metricRunner {
             writeCsvRecord(baseLevelId, M, N, seed, "patternDensity", String.format("%.4f", dens));
             double var  = runPatternVariationEntropy(lvlPath, M, N); 
             writeCsvRecord(baseLevelId, M, N, seed, "patternVariation", String.format("%.4f", var));
-            double slope = runLinearity(lvlPath);
-            writeCsvRecord(baseLevelId, M, N, seed, "linearitySlope",
-            Double.isNaN(slope) ? "NaN" : String.format("%.4f", slope));
+            double rSquared = runLinearity(lvlPath);
+            writeCsvRecord(baseLevelId, M, N, seed, "linearityRSquared",
+            Double.isNaN(rSquared) ? "NaN" : String.format("%.4f", rSquared));
         } catch (IOException e) {
             System.err.println("failed: " + e.getMessage());
         }
@@ -209,8 +209,9 @@ public class metricRunner {
         return unique / (double) patterns.size();     
     }
 
-    private static final Set<Character> PLATFORM_TILES = Set.of('X','#','S','C','L','U','@','!','2','1','D','o','t','T','*','|','%');
-    private static final Set<Character> ENEMY_TILES = Set.of('g','G','r','R','k','K','y','Y');
+    private static final Set<Character> PLATFORM_TILES = Set.of('X','#','S','C','L','U','@','!','2','1','D','t','T','%');
+    //last 3 are non-enemy empty tiles
+    private static final Set<Character> ENEMY_TILES = Set.of('g','G','r','R','k','K','y','Y', '|', 'o', '*');
     private static boolean isEmpty(char ch)         { return ch == '-' || ENEMY_TILES.contains(ch); }
     private static boolean isPlatformTile(char ch)  { return PLATFORM_TILES.contains(ch); }
 
@@ -263,7 +264,19 @@ public class metricRunner {
         double denom = n * sumX2 - sumX * sumX;
         if (denom == 0) return Double.NaN;      
 
-        return (n * sumXY - sumX * sumY) / denom;
+        double m = (n * sumXY - sumX * sumY) / denom;
+        double b = (sumY - m * sumX) / n;
+
+        double yBar  = sumY / n;
+        double ssRes = 0, ssTot = 0;
+        for (Point2D.Double p : pts) {
+            double yFit = m * p.x + b;
+            ssRes += (p.y - yFit) * (p.y - yFit);
+            ssTot += (p.y - yBar) * (p.y - yBar);
+        }
+        if (ssTot == 0) return Double.NaN;
+
+        return 1.0 - ssRes / ssTot; 
     }
     
     private static void writeCsvRecord(

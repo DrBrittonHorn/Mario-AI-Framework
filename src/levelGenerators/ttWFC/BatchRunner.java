@@ -12,11 +12,11 @@ import java.util.Random;
 
 public class BatchRunner {
     public static void main(String[] args) throws Exception {
-        String[] samples   = {"lvl-1", "lvl-2", "lvl-3", "lvl-4", "lvl-5", "lvl-6", "lvl-7", "lvl-8", "lvl-9", "lvl-10", "lvl-11", "lvl-12", "lvl-13", "lvl-14", "lvl-15"};
-        int[]    Ms        = { 1};
-        int[]    Ns        = { 1};
+        String[] samples   = {"lvl-1", "lvl-2", "lvl-3", "lvl-4", "lvl-5", "lvl-6", "lvl-7", "lvl-8", "lvl-9", "lvl-10", "lvl-11", "lvl-12", "lvl-13", "lvl-13modified", "lvl-14", "lvl-15"};
+        int[]    Ms        = { 14};
+        int[]    Ns        = { 6};
         int      repeats   = 1000;  // how many outputs will be created per MxN size and sample
-        int      attemptsPerRepeat = 1250;     
+        int      attemptsPerRepeat = 5000;     
         MarioGame game     = new MarioGame();
         try (PrintWriter csv = new PrintWriter(new FileWriter("ttwfc_results.csv"))) {
             csv.println("sample,M,N,seed,gameStatus,completion,lives,coins,time,jumps,kills");

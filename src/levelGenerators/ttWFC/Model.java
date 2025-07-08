@@ -255,11 +255,11 @@ abstract class Model
         observedSoFar = 0;
 
         // //FORCE MARIO AND FINISH
-        System.out.println("Preobserving Mario and Finish patterns at cell (" + (mPreobserveIndex % MX) + "," + (mPreobserveIndex / MX) + ") and (" + (fPreobserveIndex % MX) + "," + (fPreobserveIndex / MX) + ")");
-        System.out.println();
+        // System.out.println("Preobserving Mario and Finish patterns at cell (" + (mPreobserveIndex % MX) + "," + (mPreobserveIndex / MX) + ") and (" + (fPreobserveIndex % MX) + "," + (fPreobserveIndex / MX) + ")");
+        // System.out.println();
         for (int t = 0; t < T; t++) if (t != mPatternIndex) Ban(mPreobserveIndex, t);
         for (int t = 0; t < T; t++) if (t != fPatternIndex) Ban(fPreobserveIndex, t);
-        System.out.println("********* POST BAN *********");
+        // System.out.println("********* POST BAN *********");
         Propagate();
         if (DEBUG) dumpCompleteWave("after m/f propagate");
 

@@ -13,7 +13,6 @@ public class OverlappingModel extends Model
 {
     
     List<char[]> tilePatterns;
-    
     List<char[]> tiles;
     private int[] patternToSample;
     private final int sampleWidth;
@@ -34,10 +33,10 @@ public class OverlappingModel extends Model
         // ADD PADDING TO MAKE aINPUT FIT N
         int padCols = (M - (origSX % M)) % M;  
         int padRows = (N - (origSY % N)) % N; 
-        System.out.println("Original size: " + origSX + "x" + origSY);
-        System.out.println("Target size: " + width + "x" + height);
-        System.out.println("Padding to fit MxN: " + M + "x" + N);
-        System.out.println("Padding cols: " + padCols + ", padding rows: " + padRows);
+        // System.out.println("Original size: " + origSX + "x" + origSY);
+        // System.out.println("Target size: " + width + "x" + height);
+        // System.out.println("Padding to fit MxN: " + M + "x" + N);
+        // System.out.println("Padding cols: " + padCols + ", padding rows: " + padRows);
         this.padCols = padCols;
         this.padRows = padRows;
         String emptyCharacter = "-";
@@ -78,9 +77,9 @@ public class OverlappingModel extends Model
                 if (k==tiles.size()) tiles.add(tile);
                 int flatInd = x + y * tileCols;
                 tileSample[flatInd] = k;
-                System.out.printf("%2d ",k ); // print original input as tiles
+                // System.out.printf("%2d ",k ); // print original input as tiles
             }
-            System.out.println();
+            // System.out.println();
         }
         
         this.tileSample = tileSample;
@@ -127,12 +126,12 @@ public class OverlappingModel extends Model
                 }
             }
           
-        System.out.println("Printing tile patterns:");
-        System.out.println("Total patterns found: " + tilePatterns.size());
-        System.out.println("Total patterns in sample: " + tiles.size());
+        // System.out.println("Printing tile patterns:");
+        // System.out.println("Total patterns found: " + tilePatterns.size());
+        // System.out.println("Total patterns in sample: " + tiles.size());
         for (int i = 0; i < tilePatterns.size(); i++) {
             char[] p = tilePatterns.get(i);
-            System.out.print("Pattern " + i + ":");
+            // System.out.print("Pattern " + i + ":");
             for (int j = 0; j < p.length; j++) {
                 System.out.print(p[j]);
             }
@@ -228,10 +227,10 @@ public class OverlappingModel extends Model
                 }
             }
         }
-        printAllowed("ground", groundAllowed);
-        printAllowed("top", topAllowed);
-        printAllowed("left", leftAllowed);
-        printAllowed("right", rightAllowed);
+        // printAllowed("ground", groundAllowed);
+        // printAllowed("top", topAllowed);
+        // printAllowed("left", leftAllowed);
+        // printAllowed("right", rightAllowed);
         propagator = new int[4][][];
         for (int d = 0; d < 4; d++)
         {
@@ -256,7 +255,7 @@ public class OverlappingModel extends Model
             }
         }
 
-        printPropagator();
+        // printPropagator();
 
     }
     @Override
