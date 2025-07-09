@@ -9,6 +9,7 @@ abstract class Model
     protected boolean[] topAllowed;
     protected boolean[] leftAllowed;
     protected boolean[] rightAllowed;
+    protected boolean skipMF;
     protected int mPatternIndex, fPatternIndex, fPreobserveIndex, mPreobserveIndex;
     protected int[][][] propagator;
     int[][][] compatible;
@@ -257,17 +258,19 @@ abstract class Model
         // //FORCE MARIO AND FINISH
         // System.out.println("Preobserving Mario and Finish patterns at cell (" + (mPreobserveIndex % MX) + "," + (mPreobserveIndex / MX) + ") and (" + (fPreobserveIndex % MX) + "," + (fPreobserveIndex / MX) + ")");
         // System.out.println();
-        for (int t = 0; t < T; t++) if (t != mPatternIndex) Ban(mPreobserveIndex, t);
-        for (int t = 0; t < T; t++) if (t != fPatternIndex) Ban(fPreobserveIndex, t);
-        // System.out.println("********* POST BAN *********");
-        Propagate();
-        if (DEBUG) dumpCompleteWave("after m/f propagate");
+        if (!skipMF) {
+            for (int t = 0; t < T; t++) if (t != mPatternIndex) Ban(mPreobserveIndex, t);
+            for (int t = 0; t < T; t++) if (t != fPatternIndex) Ban(fPreobserveIndex, t);
+            // System.out.println("********* POST BAN *********");
+            Propagate();
+            if (DEBUG) dumpCompleteWave("after m/f propagate");
 
-        //BAN THEM EVERYWHERE ELSE
-        for (int i = 0; i < MX*MY; i++) if (i != mPreobserveIndex) Ban(i, mPatternIndex);
-        for (int i = 0; i < MX*MY; i++) if (i != fPreobserveIndex) Ban(i, fPatternIndex);
-        Propagate();
-        if (DEBUG) dumpWave("after else m/f propagate");
+            //BAN THEM EVERYWHERE ELSE
+            for (int i = 0; i < MX*MY; i++) if (i != mPreobserveIndex) Ban(i, mPatternIndex);
+            for (int i = 0; i < MX*MY; i++) if (i != fPreobserveIndex) Ban(i, fPatternIndex);
+            Propagate();
+            if (DEBUG) dumpWave("after else m/f propagate");
+        }
         //if (DEBUG) return;
         if (ground) {
             //ground, top, left, right edge bans

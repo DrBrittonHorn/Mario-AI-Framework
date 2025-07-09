@@ -18,7 +18,7 @@ public class Program {
         Random random = new Random();
         int seed = random.nextInt();
         String name = "all";    
-        int M = 6;  
+        int M = 14;  
         int N = 6;
         //SET width = origSX to be same as input file
         List<String> lines;

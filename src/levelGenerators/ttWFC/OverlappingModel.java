@@ -37,7 +37,7 @@ public class OverlappingModel extends Model
         List<String> lines;
         String[] targetLevels = {"lvl-1", "lvl-2", "lvl-3", "lvl-4", "lvl-5", "lvl-6", "lvl-7", "lvl-8", "lvl-9", "lvl-10", "lvl-11", "lvl-12", "lvl-13", "lvl-14", "lvl-15"};
         this.multipleLines = new ArrayList<>();
-
+        this.skipMF = "all".equals(name);
         if ("all".equals(name)) {
             for (String lvl : targetLevels) {
                 Path p = Paths.get("src/levelGenerators/ttWFC/samples/" + lvl + ".txt");
@@ -83,6 +83,18 @@ public class OverlappingModel extends Model
                 lvl1PadRows = localPadRows;
                 lvl1SX      = SX;
                 lvl1SY      = SY;
+            }
+        }
+        if ("all".equals(name)) {
+            for (List<String> sample : multipleLines) {
+                for (int i = 0; i < sample.size(); i++) {
+                    // replace every M or F with your “empty” character
+                    sample.set(i,
+                        sample.get(i)
+                            .replace('M', '-')
+                            .replace('F', '-')
+                    );
+                }
             }
         }
 
@@ -235,9 +247,9 @@ public class OverlappingModel extends Model
         this.sampleHeight = SY;
         this.tileSample = localTileSample;
           
-        System.out.println("Printing tile patterns for M=" + M + ", N=" + N);
-        System.out.println("Total patterns found: " + tilePatterns.size());
-        System.out.println("Total patterns in sample: " + tiles.size());
+        // System.out.println("Printing tile patterns for M=" + M + ", N=" + N);
+        // System.out.println("Total patterns found: " + tilePatterns.size());
+        // System.out.println("Total patterns in sample: " + tiles.size());
 
         for (int idx = 0; idx < tilePatterns.size(); idx++) {
             char[] p = tilePatterns.get(idx);
@@ -265,55 +277,57 @@ public class OverlappingModel extends Model
         int SY0        = firstLines.size();
         int tileCols0  = SX0 / M;
         int tileRows0  = SY0 / N;
-        for (int cell = 0; cell < tileRows0 * tileCols0; cell++) {
-            int cx = cell % tileCols0, cy = cell / tileCols0;
-            char[] block = tPatternBF(charBitmaps.get(0), cx*M, cy*N, SX0, SY0, M, N);
-            for (char c : block) {
-                if (c == 'M') mCell = cell;
-                if (c == 'F') fCell = cell;
+        if ("all".equals(name) == false) {
+            for (int cell = 0; cell < tileRows0 * tileCols0; cell++) {
+                int cx = cell % tileCols0, cy = cell / tileCols0;
+                char[] block = tPatternBF(charBitmaps.get(0), cx*M, cy*N, SX0, SY0, M, N);
+                for (char c : block) {
+                    if (c == 'M') mCell = cell;
+                    if (c == 'F') fCell = cell;
+                }
             }
-        }
-        if (mCell < 0 || fCell < 0) {
-            throw new IllegalStateException("Could not find both M and F in the sample!");
-        }
-
-        int sampleCols = tileCols0, outputCols = MX;
-        int sampleRows = tileRows0, outputRows = MY;
-
-        int mCx = mCell % sampleCols, mCy = mCell / sampleCols;
-        int fCx = fCell % sampleCols, fCy = fCell / sampleCols;
-
-
-        int yOffset = outputRows - sampleRows;
-        if (yOffset < 0) yOffset = 0;
-        int mOutX = mCx, mOutY = yOffset + mCy;
-
-        int fOutX = (outputCols - sampleCols) + fCx, fOutY = yOffset + fCy;
-
-        this.mPreobserveIndex = mOutX + mOutY * MX;
-        this.fPreobserveIndex = fOutX + fOutY * MX;
-
-        int rawM = tileSample[mCell];
-        int rawF = tileSample[fCell];
-
-        mPatternIndex = -1;
-        for (int t = 0; t < T; t++) {
-            if (patternToSample[t] == rawM) { 
-                mPatternIndex = t;
-                break;
+            if (mCell < 0 || fCell < 0) {
+                throw new IllegalStateException("Could not find both M and F in the sample!");
             }
-        }
-        if (mPatternIndex < 0) throw new IllegalStateException("Could not find the M-pattern!");
 
-        fPatternIndex = -1;
-        for (int t = 0; t < T; t++) {
-            if (patternToSample[t] == rawF) { 
-                fPatternIndex = t;
-                break;
+            int sampleCols = tileCols0, outputCols = MX;
+            int sampleRows = tileRows0, outputRows = MY;
+
+            int mCx = mCell % sampleCols, mCy = mCell / sampleCols;
+            int fCx = fCell % sampleCols, fCy = fCell / sampleCols;
+
+
+            int yOffset = outputRows - sampleRows;
+            if (yOffset < 0) yOffset = 0;
+            int mOutX = mCx, mOutY = yOffset + mCy;
+
+            int fOutX = (outputCols - sampleCols) + fCx, fOutY = yOffset + fCy;
+
+            this.mPreobserveIndex = mOutX + mOutY * MX;
+            this.fPreobserveIndex = fOutX + fOutY * MX;
+
+            int rawM = tileSample[mCell];
+            int rawF = tileSample[fCell];
+
+            mPatternIndex = -1;
+            for (int t = 0; t < T; t++) {
+                if (patternToSample[t] == rawM) { 
+                    mPatternIndex = t;
+                    break;
+                }
             }
-        }
-        if (fPatternIndex < 0) throw new IllegalStateException("Could not find the F-pattern!");
+            if (mPatternIndex < 0) throw new IllegalStateException("Could not find the M-pattern!");
+
+            fPatternIndex = -1;
+            for (int t = 0; t < T; t++) {
+                if (patternToSample[t] == rawF) { 
+                    fPatternIndex = t;
+                    break;
+                }
+            }
+            if (fPatternIndex < 0) throw new IllegalStateException("Could not find the F-pattern!");
        
+        }
         groundAllowed = new boolean[T];
         topAllowed   = new boolean[T];
         leftAllowed  = new boolean[T];
