@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class OverlappingModel extends Model
@@ -18,124 +19,236 @@ public class OverlappingModel extends Model
     private final int sampleWidth;
     private final int sampleHeight;
     private final int[] tileSample; 
+    private final List<int[]> tileSamples = new ArrayList<>();
     private final List<List<Integer>> patternOccurrences = new ArrayList<>();
+    private final List<List<String>> multipleLines;
     private final int padCols;
     private final int padRows;
     public OverlappingModel(String name, int M, int N, int width, int height, boolean periodicInput, boolean periodic, int symmetry, boolean ground, Heuristic heuristic)
     throws IOException{
         
         super(width, height, M, N, periodic, heuristic);
-        List<String> lines = Files.readAllLines(Paths.get("src/levelGenerators/ttWFC/samples/" + name + ".txt"));
-        int origSX = lines.get(0).length();
-        int origSY = lines.size();
+        int origSX   = 0;
+        int origSY   = 0;
+        int localPadCols  = 0;
+        int localPadRows  = 0;
+        int SX       = 0;
+        int SY       = 0;
+        List<String> lines;
+        String[] targetLevels = {"lvl-1", "lvl-2", "lvl-3", "lvl-4", "lvl-5", "lvl-6", "lvl-7", "lvl-8", "lvl-9", "lvl-10", "lvl-11", "lvl-12", "lvl-13", "lvl-14", "lvl-15"};
+        this.multipleLines = new ArrayList<>();
 
-        
-        // ADD PADDING TO MAKE aINPUT FIT N
-        int padCols = (M - (origSX % M)) % M;  
-        int padRows = (N - (origSY % N)) % N; 
-        // System.out.println("Original size: " + origSX + "x" + origSY);
-        // System.out.println("Target size: " + width + "x" + height);
-        // System.out.println("Padding to fit MxN: " + M + "x" + N);
-        // System.out.println("Padding cols: " + padCols + ", padding rows: " + padRows);
-        this.padCols = padCols;
-        this.padRows = padRows;
-        String emptyCharacter = "-";
-        for (int i = 0; i < origSY; i++) {
-            String row = lines.get(i);
-            lines.set(i, row + emptyCharacter.repeat(padCols));
+        if ("all".equals(name)) {
+            for (String lvl : targetLevels) {
+                Path p = Paths.get("src/levelGenerators/ttWFC/samples/" + lvl + ".txt");
+                lines = Files.readAllLines(p);
+                multipleLines.add(lines);
+            }
+            lines = Files.readAllLines(Paths.get("src/levelGenerators/ttWFC/samples/" + "lvl-1" + ".txt"));
+        } else {
+            Path p = Paths.get("src/levelGenerators/ttWFC/samples/" + name + ".txt");
+            lines = Files.readAllLines(p);
+            multipleLines.add(lines);
+        }
+        int lvl1OrigSX = 0,
+            lvl1OrigSY = 0,
+            lvl1PadCols = 0, 
+            lvl1PadRows = 0,
+            lvl1SX = 0,
+            lvl1SY = 0;
+
+        for (int i = 0; i < multipleLines.size(); i++) {
+            List<String> line1 = multipleLines.get(i);
+            origSX = line1.get(0).length();
+            origSY = line1.size();
+
+
+            localPadCols = (M - (origSX % M)) % M;  
+            localPadRows = (N - (origSY % N)) % N; 
+
+            String emptyCharacter = "-";
+            for (int j = 0; j < origSY; j++) {
+                String row = line1.get(j);
+                line1.set(j, row + emptyCharacter.repeat(localPadCols));
+            }
+
+            String fullPad = emptyCharacter.repeat(origSX + localPadCols);
+            for (int j = 0; j < localPadRows; j++) {
+                line1.add(fullPad);
+            }
+            if (i == 0) {
+                lvl1OrigSX  = origSX;
+                lvl1OrigSY  = origSY;
+                lvl1PadCols = localPadCols;
+                lvl1PadRows = localPadRows;
+                lvl1SX      = SX;
+                lvl1SY      = SY;
+            }
         }
 
-        String fullPad = emptyCharacter.repeat(origSX + padCols);
-        for (int i = 0; i < padRows; i++) {
-            lines.add(fullPad);
+        SX = origSX + localPadCols;
+        SY = origSY + localPadRows;
+
+
+        if ("all".equals(name)) {
+            origSX  = lvl1OrigSX;
+            origSY  = lvl1OrigSY;
+            localPadCols = lvl1PadCols;
+            localPadRows = lvl1PadRows;
+            SX      = lvl1SX;
+            SY      = lvl1SY;
         }
 
-        int SX = origSX + padCols;
-        int SY = origSY + padRows;
-
-        this.sampleWidth = SX;
-        this.sampleHeight = SY;
         char[] charBitmap = new char[SX * SY];
         int tileCols = SX/M;
         int tileRows = SY/N;
+        List<char[]> charBitmaps = new ArrayList<>();
+            for (List<String> line : multipleLines) {
+                origSX  = line.get(0).length();
+                origSY  = line.size();
+                localPadCols = (M - (origSX % M)) % M;
+                localPadRows = (N - (origSY % N)) % N;
+                SX      = origSX + localPadCols;
+                SY      = origSY + localPadRows;
 
-        for (int y = 0; y < SY; y++) {
-            String row = lines.get(SY - 1 - y);
-            for (int x = 0; x < SX; x++) {
-                charBitmap[x + y * SX] = row.charAt(x);
-            }
+                char[] currentBitmap = new char[SX * SY];
+                for (int y = 0; y < SY; y++) {
+                    String row = line.get(SY - 1 - y);
+                    for (int x = 0; x < SX; x++) {
+                        currentBitmap[x + y * SX] = row.charAt(x);
+                    }
+                }
+
+                charBitmaps.add(currentBitmap);
+        }
+        if ("all".equals(name)) {
+            origSX  = lvl1OrigSX;
+            origSY  = lvl1OrigSY;
+            localPadCols = lvl1PadCols;
+            localPadRows = lvl1PadRows;
+            SX      = lvl1SX;
+            SY      = lvl1SY;
         }
         
-        int [] tileSample = new int[tileCols * tileRows];
+        int [] localTileSample = new int[tileCols * tileRows];
+        int [] tileSampleLvl1 = new int[tileCols * tileRows];
         tiles = new ArrayList<>();
-
-        for (int y = 0; y < tileRows; y++) {
-            for (int x = 0; x < tileCols; x++) {
-                char[] tile = tPatternBF(charBitmap, x*M, y*N, SX, SY, M, N);
-                int k = 0;
-                for(; k<tiles.size();k++) if (Arrays.equals(tiles.get(k), tile)) break;
-                if (k==tiles.size()) tiles.add(tile);
-                int flatInd = x + y * tileCols;
-                tileSample[flatInd] = k;
-                // System.out.printf("%2d ",k ); // print original input as tiles
+        for (int i = 0; i < charBitmaps.size(); i++) {
+            char[] currentBitmap = charBitmaps.get(i);
+            List<String> line = multipleLines.get(i);
+            SX = line.get(0).length();
+            SY = line.size();
+            tileCols = SX / M;
+            tileRows = SY / N;
+            localTileSample = new int[tileCols * tileRows];
+            for (int y = 0; y < tileRows; y++) {
+                for (int x = 0; x < tileCols; x++) {
+                    char[] tile = tPatternBF(currentBitmap, x*M, y*N, SX, SY, M, N);
+                    int k = 0;
+                    for(; k<tiles.size();k++) if (Arrays.equals(tiles.get(k), tile)) break;
+                    if (k==tiles.size()) tiles.add(tile);
+                    int flatInd = x + y * tileCols;
+                    localTileSample[flatInd] = k;
+                    // System.out.printf("%2d ",k ); // print original input as tiles
+                }
+                // System.out.println();
             }
-            // System.out.println();
+            if(i ==0){
+                tileSampleLvl1 = localTileSample;
+            }
+            tileSamples.add(localTileSample);
         }
+        if ("all".equals(name)) {
+            origSX  = lvl1OrigSX;
+            origSY  = lvl1OrigSY;
+            localPadCols = lvl1PadCols;
+            localPadRows = lvl1PadRows;
+            SX      = lvl1SX;
+            SY      = lvl1SY;
+            localTileSample = tileSampleLvl1;
+        }
+        this.padCols = localPadCols;
+        this.padRows = localPadRows;
         
-        this.tileSample = tileSample;
         tilePatterns = new ArrayList<>();
 
         Map<String, Integer> tpIndices = new HashMap<>();
         List<Double> weightList = new ArrayList<>();
         List<Integer> patternToSampleList = new ArrayList<>();
-        int xmax = periodicInput ? SX : SX - M + 1;
-        int ymax = periodicInput ? SY : SY - N + 1;
-
-        for (int y = 0; y < ymax; y+=N) for (int x = 0; x < xmax; x+=M)
-            {
-                char[] rawTile = tPatternBF(charBitmap, x, y, SX, SY, M, N);
-
-                    char[] p0 = rawTile;
-                    char[] p1 = tReflect(p0, M, N);
-                    char[] p2 = tRotate(p0, M, N);
-                    char[] p3 = tReflect(p2, M, N);
-                    char[] p4 = tRotate(p2, M, N);
-                    char[] p5 = tReflect(p4, M, N);
-                    char[] p6 = tRotate(p4, M, N);
-                    char[] p7 = tReflect(p6, M, N);
-                    char[][] variants = {p0,p1,p2, p3, p4, p5, p6, p7};
 
 
-                for (int k = 0; k < symmetry; k++)
+
+        for (int s = 0; s < charBitmaps.size(); s++) {
+            char[] currentBitmap = charBitmaps.get(s);
+            int[]  currentSample = tileSamples.get(s);
+            SX       = multipleLines.get(s).get(0).length();
+            SY       = multipleLines.get(s).size();
+            tileCols = SX / M;
+            tileRows = SY / N;
+            int xmax = periodicInput ? SX : SX - M + 1;
+            int ymax = periodicInput ? SY : SY - N + 1;
+            for (int y = 0; y < ymax; y+=N) for (int x = 0; x < xmax; x+=M)
                 {
-                    String key = new String(variants[k]);
-                    if (tpIndices.containsKey(key)) {
-                        int idx = tpIndices.get(key);
-                        weightList.set(idx, weightList.get(idx) + 1.0);
-                        patternOccurrences.get(idx).add( x + y * tileCols );
-                    } else {
-                        int newIndex = weightList.size();
-                        tpIndices.put(key, newIndex);
-                        weightList.add(1.0);
-                        tilePatterns.add(variants[k]); 
-                        patternOccurrences.add(new ArrayList<>());
-                        patternOccurrences.get(newIndex).add(x + y*tileCols);
-                        patternToSampleList.add(tileSample[(x/M) + (y/N) * tileCols]);
-                        
+                    char[] rawTile = tPatternBF(currentBitmap, x, y, SX, SY, M, N);
+
+                        char[] p0 = rawTile;
+                        char[] p1 = tReflect(p0, M, N);
+                        char[] p2 = tRotate(p0, M, N);
+                        char[] p3 = tReflect(p2, M, N);
+                        char[] p4 = tRotate(p2, M, N);
+                        char[] p5 = tReflect(p4, M, N);
+                        char[] p6 = tRotate(p4, M, N);
+                        char[] p7 = tReflect(p6, M, N);
+                        char[][] variants = {p0,p1,p2, p3, p4, p5, p6, p7};
+
+
+                    for (int k = 0; k < symmetry; k++)
+                    {
+                        String key = new String(variants[k]);
+                        if (tpIndices.containsKey(key)) {
+                            int idx = tpIndices.get(key);
+                            weightList.set(idx, weightList.get(idx) + 1.0);
+                            patternOccurrences.get(idx).add( x + y * tileCols );
+                        } else {
+                            int newIndex = weightList.size();
+                            tpIndices.put(key, newIndex);
+                            weightList.add(1.0);
+                            tilePatterns.add(variants[k]); 
+                            patternOccurrences.add(new ArrayList<>());
+                            patternOccurrences.get(newIndex).add(x + y*tileCols);
+                            patternToSampleList.add(currentSample[(x/M) + (y/N) * tileCols]);
+                            
+                        }
                     }
                 }
-            }
+        }
+        if ("all".equals(name)) {
+            origSX  = lvl1OrigSX;
+            origSY  = lvl1OrigSY;
+            localPadCols = lvl1PadCols;
+            localPadRows = lvl1PadRows;
+            SX      = lvl1SX;
+            SY      = lvl1SY;
+            localTileSample = tileSampleLvl1;
+        }
+        this.sampleWidth = SX;
+        this.sampleHeight = SY;
+        this.tileSample = localTileSample;
           
-        // System.out.println("Printing tile patterns:");
-        // System.out.println("Total patterns found: " + tilePatterns.size());
-        // System.out.println("Total patterns in sample: " + tiles.size());
-        for (int i = 0; i < tilePatterns.size(); i++) {
-            char[] p = tilePatterns.get(i);
-            // System.out.print("Pattern " + i + ":");
-            for (int j = 0; j < p.length; j++) {
-                System.out.print(p[j]);
+        System.out.println("Printing tile patterns for M=" + M + ", N=" + N);
+        System.out.println("Total patterns found: " + tilePatterns.size());
+        System.out.println("Total patterns in sample: " + tiles.size());
+
+        for (int idx = 0; idx < tilePatterns.size(); idx++) {
+            char[] p = tilePatterns.get(idx);
+            System.out.println("Pattern " + idx + ":");
+            for (int dy = N - 1; dy >= 0; dy--) {    
+                for (int dx = 0; dx < M; dx++) {
+                    System.out.print(p[dx + dy * M]);
+                }
+                System.out.println();
             }
-            System.out.println();
+            System.out.println();              
         }
 
         this.patternToSample = patternToSampleList.stream().mapToInt(i->i).toArray();
@@ -143,12 +256,18 @@ public class OverlappingModel extends Model
         for (int i = 0; i < weightList.size(); i++) {
             weights[i] = weightList.get(i);
         }
+
         T = weights.length;
         this.ground = ground; 
         int mCell = -1, fCell = -1;
-        for (int cell = 0; cell < tileSample.length; cell++) {
-            int cx = cell % tileCols, cy = cell / tileCols;
-            char[] block = tPatternBF(charBitmap, cx*M, cy*N, SX, SY, M, N);
+        List<String> firstLines = multipleLines.get(0);
+        int SX0        = firstLines.get(0).length();
+        int SY0        = firstLines.size();
+        int tileCols0  = SX0 / M;
+        int tileRows0  = SY0 / N;
+        for (int cell = 0; cell < tileRows0 * tileCols0; cell++) {
+            int cx = cell % tileCols0, cy = cell / tileCols0;
+            char[] block = tPatternBF(charBitmaps.get(0), cx*M, cy*N, SX0, SY0, M, N);
             for (char c : block) {
                 if (c == 'M') mCell = cell;
                 if (c == 'F') fCell = cell;
@@ -158,8 +277,8 @@ public class OverlappingModel extends Model
             throw new IllegalStateException("Could not find both M and F in the sample!");
         }
 
-        int sampleCols = sampleWidth  / M, outputCols = MX;
-        int sampleRows = sampleHeight / N, outputRows = MY;
+        int sampleCols = tileCols0, outputCols = MX;
+        int sampleRows = tileRows0, outputRows = MY;
 
         int mCx = mCell % sampleCols, mCy = mCell / sampleCols;
         int fCx = fCell % sampleCols, fCy = fCell / sampleCols;
@@ -200,28 +319,35 @@ public class OverlappingModel extends Model
         leftAllowed  = new boolean[T];
         rightAllowed = new boolean[T];
         //boolean [][] allowed = new boolean[4][T];
-
-        for (int idx = 0; idx < tileSample.length; idx++) {
-            int x = idx % tileCols, y = idx / tileCols;
-            int rawID = tileSample[idx];
-            for (int p = 0; p < T; p++) if (patternToSample[p] == rawID) {
-                for (int d = 0; d < 4; d++) {
-                    int nx = x + dx[d], ny = y + dy[d];
-                    if (nx < 0 || nx >= tileCols || ny < 0 || ny >= tileRows) {
-                        //allowed[d][p] = true;
-                        switch (d) {
-                            case 0:
-                                leftAllowed[p] = true;
-                                break;
-                            case 1:
-                                topAllowed[p] = true;
-                                break;
-                            case 2:
-                                rightAllowed[p] = true;
-                                break;
-                            case 3:
-                                groundAllowed[p] = true;
-                                break;
+        for (int s = 0; s < tileSamples.size(); s++) {
+            int[] currentSample = tileSamples.get(s);
+            List<String> currentLine = multipleLines.get(s);
+            SX       = currentLine.get(0).length();
+            SY       = currentLine.size();
+            tileCols = SX / M;
+            tileRows = SY / N;
+            for (int idx = 0; idx < currentSample.length; idx++) {
+                int x = idx % tileCols, y = idx / tileCols;
+                int rawID = currentSample[idx];
+                for (int p = 0; p < T; p++) if (patternToSample[p] == rawID) {
+                    for (int d = 0; d < 4; d++) {
+                        int nx = x + dx[d], ny = y + dy[d];
+                        if (nx < 0 || nx >= tileCols || ny < 0 || ny >= tileRows) {
+                            //allowed[d][p] = true;
+                            switch (d) {
+                                case 0:
+                                    leftAllowed[p] = true;
+                                    break;
+                                case 1:
+                                    topAllowed[p] = true;
+                                    break;
+                                case 2:
+                                    rightAllowed[p] = true;
+                                    break;
+                                case 3:
+                                    groundAllowed[p] = true;
+                                    break;
+                            }
                         }
                     }
                 }
@@ -386,16 +512,22 @@ public class OverlappingModel extends Model
 
         int raw1 = patternToSample[idx1];
         int raw2 = patternToSample[idx2];
-        int tileCols = sampleWidth / M;
-        int tileRows = sampleHeight / N;
+        for (int s = 0; s < tileSamples.size(); s++) {
+            int[] currentSample = tileSamples.get(s);
+            List<String> lines = multipleLines.get(s);
+            int SX  = lines.get(0).length();
+            int SY  = lines.size();
+            int tileCols = SX / M;
+            int tileRows = SY / N;
 
-        for (int y = 0; y < tileRows; y++) {
-            for (int x = 0; x < tileCols; x++) {
-                if (tileSample[x + y*tileCols] != raw1) continue;
-                int nx = x + dx, ny = y + dy;
-                if (nx < 0 || nx >= tileCols || ny < 0 || ny >= tileRows) continue;
-                if (tileSample[nx + ny*tileCols] == raw2) {
-                    return true;
+            for (int y = 0; y < tileRows; y++) {
+                for (int x = 0; x < tileCols; x++) {
+                    if (currentSample[x + y*tileCols] != raw1) continue;
+                    int nx = x + dx, ny = y + dy;
+                    if (nx < 0 || nx >= tileCols || ny < 0 || ny >= tileRows) continue;
+                    if (currentSample[nx + ny*tileCols] == raw2) {
+                        return true;
+                    }
                 }
             }
         }
@@ -441,7 +573,7 @@ public class OverlappingModel extends Model
     }
     // private static void printTile(char[] tile, int N) {
     //     for (int y = 0; y < N; y++) {
-    //         for (int x = 0; x < N; x++) {
+    //         for (int x = 0; x < M; x++) {
     //             System.out.print(tile[x + y * N]);
     //         }
     //         System.out.println();

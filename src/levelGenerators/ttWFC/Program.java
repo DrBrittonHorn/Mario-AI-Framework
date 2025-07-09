@@ -17,11 +17,17 @@ public class Program {
 
         Random random = new Random();
         int seed = random.nextInt();
-        String name = "lvl-8";    
-        int M = 3;  
-        int N = 3;
+        String name = "all";    
+        int M = 6;  
+        int N = 6;
         //SET width = origSX to be same as input file
-        List<String> lines = Files.readAllLines(Paths.get("src/levelGenerators/TTWFC/samples/" + name + ".txt"));
+        List<String> lines;
+        if(name.equals("all")){
+            lines = Files.readAllLines(Paths.get("src/levelGenerators/TTWFC/samples/" + "lvl-1" + ".txt"));
+        }
+        else{
+            lines = Files.readAllLines(Paths.get("src/levelGenerators/TTWFC/samples/" + name + ".txt"));
+        }
         int origSX = lines.get(0).length();
         int width = origSX;
         if(width%M>0) width += M - (width % M);
