@@ -23,7 +23,7 @@ public class Program {
         //SET width = origSX to be same as input file
         List<String> lines;
         if(name.equals("all")){
-            lines = Files.readAllLines(Paths.get("src/levelGenerators/TTWFC/samples/" + "lvl-1" + ".txt"));
+            lines = Files.readAllLines(Paths.get("src/levelGenerators/TTWFC/samples/" + "lvl-1-copy" + ".txt"));
         }
         else{
             lines = Files.readAllLines(Paths.get("src/levelGenerators/TTWFC/samples/" + name + ".txt"));

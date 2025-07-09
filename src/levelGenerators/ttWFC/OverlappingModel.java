@@ -20,12 +20,14 @@ public class OverlappingModel extends Model
     private final int sampleHeight;
     private final int[] tileSample; 
     private final List<int[]> tileSamples = new ArrayList<>();
+    private final List<List<Integer>> similarTiles = new ArrayList<>();
     private final List<List<Integer>> patternOccurrences = new ArrayList<>();
     private final List<List<String>> multipleLines;
     private final int padCols;
     private final int padRows;
     public OverlappingModel(String name, int M, int N, int width, int height, boolean periodicInput, boolean periodic, int symmetry, boolean ground, Heuristic heuristic)
     throws IOException{
+        
         
         super(width, height, M, N, periodic, heuristic);
         int origSX   = 0;
@@ -34,7 +36,20 @@ public class OverlappingModel extends Model
         int localPadRows  = 0;
         int SX       = 0;
         int SY       = 0;
+        //DEFAULT CASE, should not matter
+        if(name.equals("all")==false){similarTiles.add(List.of());}
+
+        //"all" ADJACENCIES FOR 14x6
+        if(name.equals("all") && M == 14 && N ==6 ){
+            //only ground tiles (most have no pipes but some have 1-2), definitely not a permanent list
+            similarTiles.add(List.of( 0, 1, 4, 5, 6, 7, 8, 12, 32, 33, 36, 60, 70, 85, 88, 90, 92, 94, 96, 97, 114, 116, 119, 120, 122, 123, 142, 152, 168, 170, 172, 173, 174, 179, 193, 195, 198, 199, 230, 231, 234, 235, 237, 238, 239, 243, 258, 261, 265, 286, 290, 325, 342, 343, 344, 349, 370, 373, 377, 378, 383, 388));    
+            similarTiles.add(List.of()); 
+            //SKY TILES
+            similarTiles.add(List.of()); 
+        }
+
         List<String> lines;
+        //TARGET LEVELS FOR "all" RUN
         String[] targetLevels = {"lvl-1", "lvl-2", "lvl-3", "lvl-4", "lvl-5", "lvl-6", "lvl-7", "lvl-8", "lvl-9", "lvl-10", "lvl-11", "lvl-12", "lvl-13", "lvl-14", "lvl-15"};
         this.multipleLines = new ArrayList<>();
         this.skipMF = "all".equals(name);
@@ -85,7 +100,7 @@ public class OverlappingModel extends Model
                 lvl1SY      = SY;
             }
         }
-        if ("all".equals(name)) {
+        if (this.skipMF) {
             for (List<String> sample : multipleLines) {
                 for (int i = 0; i < sample.size(); i++) {
                     // replace every M or F with your “empty” character
@@ -110,6 +125,8 @@ public class OverlappingModel extends Model
             SX      = lvl1SX;
             SY      = lvl1SY;
         }
+        this.padRows = lvl1PadRows;
+        this.padCols = localPadCols;
 
         char[] charBitmap = new char[SX * SY];
         int tileCols = SX/M;
@@ -179,8 +196,7 @@ public class OverlappingModel extends Model
             SY      = lvl1SY;
             localTileSample = tileSampleLvl1;
         }
-        this.padCols = localPadCols;
-        this.padRows = localPadRows;
+
         
         tilePatterns = new ArrayList<>();
 
@@ -247,9 +263,9 @@ public class OverlappingModel extends Model
         this.sampleHeight = SY;
         this.tileSample = localTileSample;
           
-        // System.out.println("Printing tile patterns for M=" + M + ", N=" + N);
-        // System.out.println("Total patterns found: " + tilePatterns.size());
-        // System.out.println("Total patterns in sample: " + tiles.size());
+        System.out.println("Printing tile patterns for M=" + M + ", N=" + N);
+        System.out.println("Total patterns found: " + tilePatterns.size());
+        System.out.println("Total patterns in sample: " + tiles.size());
 
         for (int idx = 0; idx < tilePatterns.size(); idx++) {
             char[] p = tilePatterns.get(idx);
@@ -277,7 +293,7 @@ public class OverlappingModel extends Model
         int SY0        = firstLines.size();
         int tileCols0  = SX0 / M;
         int tileRows0  = SY0 / N;
-        if ("all".equals(name) == false) {
+        if (!this.skipMF) {
             for (int cell = 0; cell < tileRows0 * tileCols0; cell++) {
                 int cx = cell % tileCols0, cy = cell / tileCols0;
                 char[] block = tPatternBF(charBitmaps.get(0), cx*M, cy*N, SX0, SY0, M, N);
@@ -367,10 +383,10 @@ public class OverlappingModel extends Model
                 }
             }
         }
-        // printAllowed("ground", groundAllowed);
-        // printAllowed("top", topAllowed);
-        // printAllowed("left", leftAllowed);
-        // printAllowed("right", rightAllowed);
+        printAllowed("ground", groundAllowed);
+        printAllowed("top", topAllowed);
+        printAllowed("left", leftAllowed);
+        printAllowed("right", rightAllowed);
         propagator = new int[4][][];
         for (int d = 0; d < 4; d++)
         {
@@ -524,8 +540,8 @@ public class OverlappingModel extends Model
         }
         if (idx1 < 0 || idx2 < 0) return false;
 
-        int raw1 = patternToSample[idx1];
-        int raw2 = patternToSample[idx2];
+        // int raw1 = patternToSample[idx1];
+        // int raw2 = patternToSample[idx2];
         for (int s = 0; s < tileSamples.size(); s++) {
             int[] currentSample = tileSamples.get(s);
             List<String> lines = multipleLines.get(s);
@@ -533,14 +549,29 @@ public class OverlappingModel extends Model
             int SY  = lines.size();
             int tileCols = SX / M;
             int tileRows = SY / N;
+            //GETS LIST OF similar tiles for idx1
+            List<Integer> group1 = List.of(idx1);
+            List<Integer> group2 = List.of(idx2);
+            for (List<Integer> g : similarTiles) {
+                if (g.contains(idx1)) { group1 = g; break;}
+            }
+            for (List<Integer> g : similarTiles) {
+                if (g.contains(idx2)) { group2 = g; break; }
+            }
 
-            for (int y = 0; y < tileRows; y++) {
-                for (int x = 0; x < tileCols; x++) {
-                    if (currentSample[x + y*tileCols] != raw1) continue;
-                    int nx = x + dx, ny = y + dy;
-                    if (nx < 0 || nx >= tileCols || ny < 0 || ny >= tileRows) continue;
-                    if (currentSample[nx + ny*tileCols] == raw2) {
-                        return true;
+            for(int sim : group1){
+                int raw1 = patternToSample[sim];
+                for (int sim2 : group2) {
+                    int raw2 = patternToSample[sim2];
+                    for (int y = 0; y < tileRows; y++) {
+                        for (int x = 0; x < tileCols; x++) {
+                            if (currentSample[x + y*tileCols] != raw1) continue;
+                            int nx = x + dx, ny = y + dy;
+                            if (nx < 0 || nx >= tileCols || ny < 0 || ny >= tileRows) continue;
+                            if (currentSample[nx + ny*tileCols] == raw2) {
+                                return true;
+                            }
+                        }
                     }
                 }
             }
