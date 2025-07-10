@@ -31,8 +31,8 @@ public class OverlappingModel extends Model
     public OverlappingModel(String name, int M, int N, int width, int height, boolean periodicInput, boolean periodic, int symmetry, boolean ground, Heuristic heuristic)
     throws IOException{
         
-        
         super(width, height, M, N, periodic, heuristic);
+        System.out.println("OverlappingModel constructor called");
         int origSX   = 0;
         int origSY   = 0;
         int localPadCols  = 0;
@@ -130,7 +130,7 @@ public class OverlappingModel extends Model
         }
         this.padRows = lvl1PadRows;
         this.padCols = localPadCols;
-
+        System.out.println("Setting bitmaps");
         char[] charBitmap = new char[SX * SY];
         int tileCols = SX/M;
         int tileRows = SY/N;
@@ -161,7 +161,7 @@ public class OverlappingModel extends Model
             SX      = lvl1SX;
             SY      = lvl1SY;
         }
-        
+        System.out.println("Determining tile IDs");
         int [] localTileSample = new int[tileCols * tileRows];
         int [] tileSampleLvl1 = new int[tileCols * tileRows];
         tiles = new ArrayList<>();
@@ -184,7 +184,7 @@ public class OverlappingModel extends Model
                             allHyphens = false;
                         }
                         char c = tile[char_i];
-                        if (c == 'g' || c == 'G' || c == 'r' || c == 'R' || c == 'k' || c == 'K' || c == 'y' || c == 'Y' || c == 'o' || c == '|') {
+                        if (c == 'g' || c == 'G' || c == 'r' || c == 'R' || c == 'k' || c == 'K' || c == 'y' || c == 'Y' || c == 'o' /*|| c == '|'*/) {
                             // replace enemies with empty character
                             c = '-';
                         }
@@ -248,7 +248,7 @@ public class OverlappingModel extends Model
         List<Integer> patternToSampleList = new ArrayList<>();
 
 
-
+        System.out.println("Performing rotations and reflections");
         for (int s = 0; s < charBitmaps.size(); s++) {
             char[] currentBitmap = charBitmaps.get(s);
             int[]  currentSample = tileSamples.get(s);
@@ -393,6 +393,7 @@ public class OverlappingModel extends Model
         leftAllowed  = new boolean[T];
         rightAllowed = new boolean[T];
         //boolean [][] allowed = new boolean[4][T];
+        System.out.println("Processing borders");
         for (int s = 0; s < tileSamples.size(); s++) {
             int[] currentSample = tileSamples.get(s);
             List<String> currentLine = multipleLines.get(s);
@@ -454,7 +455,7 @@ public class OverlappingModel extends Model
                 propagator[d][t] = arr;
             }
         }
-
+        System.out.println("Fininshed propagator initialization");
         // printPropagator();
 
     }
@@ -605,13 +606,13 @@ public class OverlappingModel extends Model
 
             for(int sim : group1){
                 int raw1 = patternToSample[sim];
-                for (int sim2 : group2) {
-                    int raw2 = patternToSample[sim2];
-                    for (int y = 0; y < tileRows; y++) {
-                        for (int x = 0; x < tileCols; x++) {
-                            if (currentSample[x + y*tileCols] != raw1) continue;
-                            int nx = x + dx, ny = y + dy;
-                            if (nx < 0 || nx >= tileCols || ny < 0 || ny >= tileRows) continue;
+                for (int y = 0; y < tileRows; y++) {
+                    for (int x = 0; x < tileCols; x++) {
+                        if (currentSample[x + y*tileCols] != raw1) continue;
+                        int nx = x + dx, ny = y + dy;
+                        if (nx < 0 || nx >= tileCols || ny < 0 || ny >= tileRows) continue;
+                        for (int sim2 : group2) {
+                            int raw2 = patternToSample[sim2];
                             if (currentSample[nx + ny*tileCols] == raw2) {
                                 return true;
                             }
