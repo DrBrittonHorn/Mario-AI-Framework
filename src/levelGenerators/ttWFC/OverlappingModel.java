@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,7 +16,8 @@ public class OverlappingModel extends Model
 {
     
     List<char[]> tilePatterns;
-    List<char[]> tiles;
+    List<char[]> tiles, enemiesRemovedtiles;
+    Map<Integer,Set<Integer>> enemiesRemovedMapping = new HashMap<>();
     private int[] patternToSample;
     private final int sampleWidth;
     private final int sampleHeight;
@@ -37,15 +40,15 @@ public class OverlappingModel extends Model
         int SX       = 0;
         int SY       = 0;
         //DEFAULT CASE, should not matter
-        if(name.equals("all")==false){similarTiles.add(List.of());}
+        if(!name.equals("all")){similarTiles.add(List.of());}
 
         //"all" ADJACENCIES FOR 14x6
         if(name.equals("all") && M == 14 && N ==6 ){
             //only ground tiles (most have no pipes but some have 1-2), definitely not a permanent list
-            similarTiles.add(List.of( 0, 1, 5, 6, 8, 36, 88, 90, 94, 96, 120, 142, 168, 174, 230, 231, 234, 235, 238, 239, 258, 261, 265, 290, 366, 368, 373, 377, 378, 383, 388));    
-            similarTiles.add(List.of()); 
+            //similarTiles.add(List.of( 0, 1, 5, 6, 8, 36, 88, 90, 94, 96, 120, 142, 168, 174, 230, 231, 234, 235, 238, 239, 258, 261, 265, 290, 366, 368, 373, 377, 378, 383, 388));    
+            //similarTiles.add(List.of()); 
             //SKY TILES
-            similarTiles.add(List.of()); 
+            //similarTiles.add(List.of()); 
         }
 
         List<String> lines;
@@ -162,6 +165,7 @@ public class OverlappingModel extends Model
         int [] localTileSample = new int[tileCols * tileRows];
         int [] tileSampleLvl1 = new int[tileCols * tileRows];
         tiles = new ArrayList<>();
+        enemiesRemovedtiles = new ArrayList<>();
         for (int i = 0; i < charBitmaps.size(); i++) {
             char[] currentBitmap = charBitmaps.get(i);
             List<String> line = multipleLines.get(i);
@@ -172,13 +176,41 @@ public class OverlappingModel extends Model
             localTileSample = new int[tileCols * tileRows];
             for (int y = 0; y < tileRows; y++) {
                 for (int x = 0; x < tileCols; x++) {
+                    boolean allHyphens = true;
                     char[] tile = tPatternBF(currentBitmap, x*M, y*N, SX, SY, M, N);
+                    char[] enemiesRemovedTile = new char[tile.length];
+                    for (int char_i = 0; char_i < tile.length; char_i++) {
+                        if (tile[char_i] != '-') {
+                            allHyphens = false;
+                        }
+                        char c = tile[char_i];
+                        if (c == 'g' || c == 'G' || c == 'r' || c == 'R' || c == 'k' || c == 'K' || c == 'y' || c == 'Y' || c == 'o' || c == '|') {
+                            // replace enemies with empty character
+                            c = '-';
+                        }
+                        enemiesRemovedTile[char_i] = c;
+                    }
                     int k = 0;
                     for(; k<tiles.size();k++) if (Arrays.equals(tiles.get(k), tile)) break;
                     if (k==tiles.size()) tiles.add(tile);
                     int flatInd = x + y * tileCols;
                     localTileSample[flatInd] = k;
                     // System.out.printf("%2d ",k ); // print original input as tiles
+                    // if only hyphens in the tile
+                    if (!allHyphens) {
+                        int j=0;
+                        for(; j<enemiesRemovedtiles.size();j++) {
+                            if (Arrays.equals(enemiesRemovedtiles.get(j), enemiesRemovedTile)) {
+                                enemiesRemovedMapping.get(j).add(k);
+                                break;
+                            }
+                        }
+                        if (j==enemiesRemovedtiles.size()) {
+                            enemiesRemovedtiles.add(enemiesRemovedTile);
+                            enemiesRemovedMapping.put(j, new HashSet<Integer>());
+                            enemiesRemovedMapping.get(j).add(k);
+                        }
+                    }
                 }
                 // System.out.println();
             }
@@ -195,6 +227,17 @@ public class OverlappingModel extends Model
             SX      = lvl1SX;
             SY      = lvl1SY;
             localTileSample = tileSampleLvl1;
+
+            for (int i = 0; i < enemiesRemovedtiles.size(); i++) {
+                //System.out.print("Enemies removed tile " + i + ":");
+                Set<Integer> originalTiles = enemiesRemovedMapping.get(i);
+                if (originalTiles.size() < 2) continue;
+                similarTiles.add(new ArrayList<>(originalTiles));
+                //for (int originalTile : originalTiles) {
+                    //System.out.print(originalTile + " ");
+                //}
+                //System.out.println();
+            }
         }
 
         
@@ -263,6 +306,7 @@ public class OverlappingModel extends Model
         this.sampleHeight = SY;
         this.tileSample = localTileSample;
           
+        /*
         System.out.println("Printing tile patterns for M=" + M + ", N=" + N);
         System.out.println("Total patterns found: " + tilePatterns.size());
         System.out.println("Total patterns in sample: " + tiles.size());
@@ -277,7 +321,7 @@ public class OverlappingModel extends Model
                 System.out.println();
             }
             System.out.println();              
-        }
+        }*/
 
         this.patternToSample = patternToSampleList.stream().mapToInt(i->i).toArray();
         weights = new double[weightList.size()];

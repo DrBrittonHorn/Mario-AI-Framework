@@ -44,6 +44,7 @@ abstract class Model
 
     void Init()
     {
+        System.out.println("Init call");
         if (DEBUG) System.out.println("Initializing WFC model with " + MX + "x" + MY + 
             " grid, M=" + M + ", N=" + N + ", periodic=" + 
             periodic + ", heuristic=" + heuristic);
@@ -83,7 +84,7 @@ abstract class Model
     public boolean Run(int seed, int limit)
     {
         if (wave == null) Init();
-
+        System.out.println("calling clear()");
         Clear();
         // if (DEBUG) return false;
 
