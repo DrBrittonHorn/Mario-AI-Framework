@@ -42,7 +42,7 @@ public class OverlappingModel extends Model
         //"all" ADJACENCIES FOR 14x6
         if(name.equals("all") && M == 14 && N ==6 ){
             //only ground tiles (most have no pipes but some have 1-2), definitely not a permanent list
-            similarTiles.add(List.of( 0, 1, 4, 5, 6, 7, 8, 12, 32, 33, 36, 60, 70, 85, 88, 90, 92, 94, 96, 97, 114, 116, 119, 120, 122, 123, 142, 152, 168, 170, 172, 173, 174, 179, 193, 195, 198, 199, 230, 231, 234, 235, 237, 238, 239, 243, 258, 261, 265, 286, 290, 325, 342, 343, 344, 349, 370, 373, 377, 378, 383, 388));    
+            similarTiles.add(List.of( 0, 1, 5, 6, 8, 36, 88, 90, 94, 96, 120, 142, 168, 174, 230, 231, 234, 235, 238, 239, 258, 261, 265, 290, 366, 368, 373, 377, 378, 383, 388));    
             similarTiles.add(List.of()); 
             //SKY TILES
             similarTiles.add(List.of()); 
