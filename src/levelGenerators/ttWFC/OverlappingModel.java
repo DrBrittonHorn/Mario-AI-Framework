@@ -1,16 +1,16 @@
 package levelGenerators.ttWFC;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class OverlappingModel extends Model
 {
@@ -19,8 +19,8 @@ public class OverlappingModel extends Model
     List<char[]> tiles, enemiesRemovedtiles;
     Map<Integer,Set<Integer>> enemiesRemovedMapping = new HashMap<>();
     private int[] patternToSample;
-    private final int sampleWidth;
-    private final int sampleHeight;
+    // private final int sampleWidth;
+    // private final int sampleHeight;
     private final int[] tileSample; 
     private final List<int[]> tileSamples = new ArrayList<>();
     private final List<List<Integer>> similarTiles = new ArrayList<>();
@@ -62,7 +62,7 @@ public class OverlappingModel extends Model
                 lines = Files.readAllLines(p);
                 multipleLines.add(lines);
             }
-            lines = Files.readAllLines(Paths.get("src/levelGenerators/ttWFC/samples/" + "lvl-1" + ".txt"));
+            // lines = Files.readAllLines(Paths.get("src/levelGenerators/ttWFC/samples/" + "lvl-1" + ".txt"));
         } else {
             Path p = Paths.get("src/levelGenerators/ttWFC/samples/" + name + ".txt");
             lines = Files.readAllLines(p);
@@ -103,35 +103,35 @@ public class OverlappingModel extends Model
                 lvl1SY      = SY;
             }
         }
-        if (this.skipMF) {
-            for (List<String> sample : multipleLines) {
-                for (int i = 0; i < sample.size(); i++) {
-                    // replace every M or F with your “empty” character
-                    sample.set(i,
-                        sample.get(i)
-                            .replace('M', '-')
-                            .replace('F', '-')
-                    );
-                }
-            }
-        }
+        // if (this.skipMF) {
+        //     for (List<String> sample : multipleLines) {
+        //         for (int i = 0; i < sample.size(); i++) {
+        //             // replace every M or F with your “empty” character
+        //             sample.set(i,
+        //                 sample.get(i)
+        //                     .replace('M', '-')
+        //                     .replace('F', '-')
+        //             );
+        //         }
+        //     }
+        // }
 
         SX = origSX + localPadCols;
         SY = origSY + localPadRows;
 
 
         if ("all".equals(name)) {
-            origSX  = lvl1OrigSX;
-            origSY  = lvl1OrigSY;
-            localPadCols = lvl1PadCols;
-            localPadRows = lvl1PadRows;
+            // origSX  = lvl1OrigSX;
+            // origSY  = lvl1OrigSY;
+            // localPadCols = lvl1PadCols;
+            // localPadRows = lvl1PadRows;
             SX      = lvl1SX;
             SY      = lvl1SY;
         }
         this.padRows = lvl1PadRows;
         this.padCols = localPadCols;
         System.out.println("Setting bitmaps");
-        char[] charBitmap = new char[SX * SY];
+        // char[] charBitmap = new char[SX * SY];
         int tileCols = SX/M;
         int tileRows = SY/N;
         List<char[]> charBitmaps = new ArrayList<>();
@@ -154,19 +154,22 @@ public class OverlappingModel extends Model
                 charBitmaps.add(currentBitmap);
         }
         if ("all".equals(name)) {
-            origSX  = lvl1OrigSX;
-            origSY  = lvl1OrigSY;
-            localPadCols = lvl1PadCols;
-            localPadRows = lvl1PadRows;
-            SX      = lvl1SX;
-            SY      = lvl1SY;
+            // origSX  = lvl1OrigSX;
+            // origSY  = lvl1OrigSY;
+            // localPadCols = lvl1PadCols;
+            // localPadRows = lvl1PadRows;
+            // SX      = lvl1SX;
+            // SY      = lvl1SY;
         }
         System.out.println("Determining tile IDs");
         int [] localTileSample = new int[tileCols * tileRows];
         int [] tileSampleLvl1 = new int[tileCols * tileRows];
         tiles = new ArrayList<>();
+        List<Integer> fTiles = new ArrayList<>();
+        List<Integer> mTiles = new ArrayList<>();
         enemiesRemovedtiles = new ArrayList<>();
         for (int i = 0; i < charBitmaps.size(); i++) {
+            boolean trackF = (i != 1 && i != 7);
             char[] currentBitmap = charBitmaps.get(i);
             List<String> line = multipleLines.get(i);
             SX = line.get(0).length();
@@ -195,6 +198,23 @@ public class OverlappingModel extends Model
                     if (k==tiles.size()) tiles.add(tile);
                     int flatInd = x + y * tileCols;
                     localTileSample[flatInd] = k;
+                    if (trackF) {
+                        for (char c : tile) {
+                          if (c == 'F') {
+                            fTiles.add(k);
+                            System.out.println(tile);
+                            break;
+                          }
+                        }
+                    }
+                    for (char c : tile) {
+                        if (c == 'M') {
+                          mTiles.add(k);
+                          System.out.println(tile);
+                          break;
+                        }
+                      }
+                    
                     // System.out.printf("%2d ",k ); // print original input as tiles
                     // if only hyphens in the tile
                     if (!allHyphens) {
@@ -219,13 +239,19 @@ public class OverlappingModel extends Model
             }
             tileSamples.add(localTileSample);
         }
+        if (!fTiles.isEmpty()) {
+            similarTiles.add(new ArrayList<>(fTiles));
+          }
+        if (!fTiles.isEmpty()) {
+            similarTiles.add(new ArrayList<>(fTiles));
+        }
         if ("all".equals(name)) {
-            origSX  = lvl1OrigSX;
-            origSY  = lvl1OrigSY;
-            localPadCols = lvl1PadCols;
-            localPadRows = lvl1PadRows;
-            SX      = lvl1SX;
-            SY      = lvl1SY;
+            // origSX  = lvl1OrigSX;
+            // origSY  = lvl1OrigSY;
+            // localPadCols = lvl1PadCols;
+            // localPadRows = lvl1PadRows;
+            // SX      = lvl1SX;
+            // SY      = lvl1SY;
             localTileSample = tileSampleLvl1;
 
             for (int i = 0; i < enemiesRemovedtiles.size(); i++) {
@@ -246,7 +272,7 @@ public class OverlappingModel extends Model
         Map<String, Integer> tpIndices = new HashMap<>();
         List<Double> weightList = new ArrayList<>();
         List<Integer> patternToSampleList = new ArrayList<>();
-
+        
 
         System.out.println("Performing rotations and reflections");
         for (int s = 0; s < charBitmaps.size(); s++) {
@@ -255,7 +281,7 @@ public class OverlappingModel extends Model
             SX       = multipleLines.get(s).get(0).length();
             SY       = multipleLines.get(s).size();
             tileCols = SX / M;
-            tileRows = SY / N;
+            // tileRows = SY / N;
             int xmax = periodicInput ? SX : SX - M + 1;
             int ymax = periodicInput ? SY : SY - N + 1;
             for (int y = 0; y < ymax; y+=N) for (int x = 0; x < xmax; x+=M)
@@ -294,16 +320,16 @@ public class OverlappingModel extends Model
                 }
         }
         if ("all".equals(name)) {
-            origSX  = lvl1OrigSX;
-            origSY  = lvl1OrigSY;
-            localPadCols = lvl1PadCols;
-            localPadRows = lvl1PadRows;
-            SX      = lvl1SX;
-            SY      = lvl1SY;
+            // origSX  = lvl1OrigSX;
+            // origSY  = lvl1OrigSY;
+            // localPadCols = lvl1PadCols;
+            // localPadRows = lvl1PadRows;
+            // SX      = lvl1SX;
+            // SY      = lvl1SY;
             localTileSample = tileSampleLvl1;
         }
-        this.sampleWidth = SX;
-        this.sampleHeight = SY;
+        // this.sampleWidth = SX;
+        // this.sampleHeight = SY;
         this.tileSample = localTileSample;
           
         /*
