@@ -465,11 +465,11 @@ public class OverlappingModel extends Model
             for (int t = 0; t < T; t++)
             {
                 List<Integer> list = new ArrayList<>();
-                char[] p1 = tilePatterns.get(t);
+                //char[] p1 = tilePatterns.get(t);
                 for (int t2 = 0; t2 < T; t2++) {
-                    char[] p2 = tilePatterns.get(t2);
+                    //char[] p2 = tilePatterns.get(t2);
 
-                    if (tAgrees( p1, p2, dx[d], dy[d],N ) ) 
+                    if (tAgrees( t, t2, dx[d], dy[d]) ) 
                     {
                         list.add(t2);
                     }
@@ -602,14 +602,8 @@ public class OverlappingModel extends Model
         }
     }
 
-    private boolean tAgrees(char[] p1, char[] p2, int dx, int dy, int N) {
-        int idx1 = -1, idx2 = -1;
-        for (int i = 0; i < tilePatterns.size(); i++) {
-            if (Arrays.equals(tilePatterns.get(i), p1)) idx1 = i;
-            if (Arrays.equals(tilePatterns.get(i), p2)) idx2 = i;
-            if (idx1 >= 0 && idx2 >= 0) break;
-        }
-        if (idx1 < 0 || idx2 < 0) return false;
+    //private boolean tAgrees(char[] p1, char[] p2, int dx, int dy) {
+    private boolean tAgrees(int idx1, int idx2, int dx, int dy) {
 
         // int raw1 = patternToSample[idx1];
         // int raw2 = patternToSample[idx2];
@@ -630,18 +624,25 @@ public class OverlappingModel extends Model
                 if (g.contains(idx2)) { group2 = g; break; }
             }
 
-            for(int sim : group1){
-                int raw1 = patternToSample[sim];
+            if (group1.size() > 1 || group2.size() > 1) {
                 for (int y = 0; y < tileRows; y++) {
                     for (int x = 0; x < tileCols; x++) {
-                        if (currentSample[x + y*tileCols] != raw1) continue;
+                        if (!group1.contains(currentSample[x + y*tileCols])) continue;
                         int nx = x + dx, ny = y + dy;
                         if (nx < 0 || nx >= tileCols || ny < 0 || ny >= tileRows) continue;
-                        for (int sim2 : group2) {
-                            int raw2 = patternToSample[sim2];
-                            if (currentSample[nx + ny*tileCols] == raw2) {
-                                return true;
-                            }
+                        if (group2.contains(currentSample[nx + ny*tileCols])) {
+                            return true;
+                        }
+                    }
+                }
+            } else {
+                for (int y = 0; y < tileRows; y++) {
+                    for (int x = 0; x < tileCols; x++) {
+                        if (currentSample[x + y*tileCols] != idx1) continue;
+                        int nx = x + dx, ny = y + dy;
+                        if (nx < 0 || nx >= tileCols || ny < 0 || ny >= tileRows) continue;
+                        if (currentSample[nx + ny*tileCols] == idx2) {
+                            return true;
                         }
                     }
                 }
