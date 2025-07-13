@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 public class OverlappingModel extends Model
@@ -55,7 +56,8 @@ public class OverlappingModel extends Model
         //TARGET LEVELS FOR "all" RUN
         String[] targetLevels = {"lvl-1", "lvl-2", "lvl-3", "lvl-4", "lvl-5", "lvl-6", "lvl-7", "lvl-8", "lvl-9", "lvl-10", "lvl-11", "lvl-12", "lvl-13", "lvl-14", "lvl-15"};
         this.multipleLines = new ArrayList<>();
-        this.skipMF = "all".equals(name);
+        // this.skipMF = "all".equals(name);
+        this.skipMF = false;
         if ("all".equals(name)) {
             for (String lvl : targetLevels) {
                 Path p = Paths.get("src/levelGenerators/ttWFC/samples/" + lvl + ".txt");
@@ -167,6 +169,8 @@ public class OverlappingModel extends Model
         tiles = new ArrayList<>();
         List<Integer> fTiles = new ArrayList<>();
         List<Integer> mTiles = new ArrayList<>();
+        List<int[]> mLocations = new ArrayList<>();
+        List<int[]> fLocations = new ArrayList<>();
         enemiesRemovedtiles = new ArrayList<>();
         for (int i = 0; i < charBitmaps.size(); i++) {
             boolean trackF = (i != 1 && i != 7);
@@ -210,8 +214,13 @@ public class OverlappingModel extends Model
                     for (char c : tile) {
                         if (c == 'M') {
                           mTiles.add(k);
+                          mLocations.add(new int[]{i, flatInd});
                           System.out.println(tile);
                           break;
+                        }
+                        if (c == 'F') {
+                            fLocations.add(new int[]{i, flatInd});
+                            break;
                         }
                       }
                     
@@ -363,6 +372,7 @@ public class OverlappingModel extends Model
         int SY0        = firstLines.size();
         int tileCols0  = SX0 / M;
         int tileRows0  = SY0 / N;
+        
         if (!this.skipMF) {
             for (int cell = 0; cell < tileRows0 * tileCols0; cell++) {
                 int cx = cell % tileCols0, cy = cell / tileCols0;
@@ -375,25 +385,56 @@ public class OverlappingModel extends Model
             if (mCell < 0 || fCell < 0) {
                 throw new IllegalStateException("Could not find both M and F in the sample!");
             }
+            Random rnd = new Random();
+            int[] mPick = mLocations.get(rnd.nextInt(mLocations.size()));
+            int[] fPick = fLocations.get(rnd.nextInt(fLocations.size()));
 
-            int sampleCols = tileCols0, outputCols = MX;
-            int sampleRows = tileRows0, outputRows = MY;
+            int mSampleIdx = mPick[0];            
+            mCell           = mPick[1];            
+    
+            fCell           = fPick[1]; 
+            int fSampleIdx = fPick[0];   
+
+            List<String> mLines   = multipleLines.get(mSampleIdx);  
+            int sampleCols        = mLines.get(0).length() / M;     
+            int sampleRows        = mLines.size()       / N;          
+            int outputCols        = MX, outputRows = MY;
 
             int mCx = mCell % sampleCols, mCy = mCell / sampleCols;
-            int fCx = fCell % sampleCols, fCy = fCell / sampleCols;
+            // int fCx = fCell % sampleCols, fCy = fCell / sampleCols;
 
 
             int yOffset = outputRows - sampleRows;
             if (yOffset < 0) yOffset = 0;
             int mOutX = mCx, mOutY = yOffset + mCy;
 
-            int fOutX = (outputCols - sampleCols) + fCx, fOutY = yOffset + fCy;
+            // int fOutX = (outputCols - sampleCols) + fCx, fOutY = yOffset + fCy;
 
             this.mPreobserveIndex = mOutX + mOutY * MX;
+            // this.fPreobserveIndex = fOutX + fOutY * MX;
+
+            int rawM = tileSamples.get(mSampleIdx)[mCell]; 
+            int rawF = tileSamples.get(fSampleIdx)[fCell];
+
+            List<String> fLines   = multipleLines.get(fSampleIdx);  
+            sampleCols        = fLines.get(0).length() / M;     
+            sampleRows        = fLines.size()       / N;
+            outputCols        = MX;
+            outputRows = MY;          
+            
+            yOffset = outputRows - sampleRows;
+
+            int fCx = fCell % sampleCols, fCy = fCell / sampleCols;
+            int fOutX = (outputCols - sampleCols) + fCx, fOutY = yOffset + fCy;
+
             this.fPreobserveIndex = fOutX + fOutY * MX;
 
-            int rawM = tileSample[mCell];
-            int rawF = tileSample[fCell];
+            System.out.printf(
+                "→ Random pick: Mario from sample %d at cell %d (x=%d,y=%d), raw tile ID=%d; " +
+                "Finish from sample %d at cell %d (x=%d,y=%d), raw tile ID=%d%n",
+                mSampleIdx, mCell, mCx, mCy, rawM,
+                fSampleIdx, fCell, fCx, fCy, rawF
+            );
 
             mPatternIndex = -1;
             for (int t = 0; t < T; t++) {
@@ -569,8 +610,25 @@ public class OverlappingModel extends Model
                 }
             }
         }
-
-        int trimCols = padCols; 
+        int dynamicTrimCols = 0;
+        // scan from the right edge inwards…
+        for (int x = outW - 1; x >= 0; x--) {
+            boolean allHyphens = true;
+            // check every row in this column
+            for (int y = 0; y < outH; y++) {
+                if (charBitmap[x + y * outW] != '-') {
+                    allHyphens = false;
+                    break;
+                }
+            }
+            if (allHyphens) {
+                dynamicTrimCols++;
+            } else {
+                break;  // stop as soon as you hit a non-hyphen column
+            }
+        }
+        // int trimCols = padCols; 
+        int trimCols = dynamicTrimCols;
         int trimRows = padRows; 
 
         int croppedW = outW - trimCols;
