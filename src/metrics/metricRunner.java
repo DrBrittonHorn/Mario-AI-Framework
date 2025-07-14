@@ -77,6 +77,8 @@ public class metricRunner {
             writeCsvRecord(baseLevelId, M, N, seed, "patternDensity", String.format("%.4f", dens));
             double var  = runPatternVariationEntropy(lvlPath, M, N); 
             writeCsvRecord(baseLevelId, M, N, seed, "patternVariation", String.format("%.4f", var));
+            double density = runDensityMetric(lvlPath);
+            writeCsvRecord(baseLevelId, M, N, seed, "densityMetric", String.format("%.4f", density));
             double rSquared = runLinearity(lvlPath);
             writeCsvRecord(baseLevelId, M, N, seed, "linearityRSquared",
             Double.isNaN(rSquared) ? "NaN" : String.format("%.4f", rSquared));
@@ -277,6 +279,42 @@ public class metricRunner {
         if (ssTot == 0) return Double.NaN;
 
         return 1.0 - ssRes / ssTot; 
+    }
+
+    public static double runDensityMetric(Path lvlPath) throws IOException {
+        List<String> lines = Files.readAllLines(lvlPath);
+        if (lines.isEmpty()) return 0.0;
+
+        int rows = lines.size();
+        int cols = lines.get(0).length();
+        int[] platformCounts = new int[cols];
+
+        for (int y = 0; y < rows; y++) {
+            String row = lines.get(y);
+            String rowAbove = (y == 0) ? null : lines.get(y - 1);
+
+            for (int x = 0; x < cols; x++) {
+                char tile = row.charAt(x);
+                boolean isStandable = isPlatformTile(tile) &&
+                                    (rowAbove == null || isEmpty(rowAbove.charAt(x)));
+                if (isStandable) {
+                    platformCounts[x]++;
+                }
+            }
+        }
+
+        // Compute average density
+        double sum = 0;
+        int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
+        for (int count : platformCounts) {
+            sum += count;
+            if (count < min) min = count;
+            if (count > max) max = count;
+        }
+        double avg = sum / cols;
+
+        // Normalize: if max == min, return 1.0 (flat density)
+        return (max == min) ? 1.0 : (avg - min) / (max - min);
     }
     
     private static void writeCsvRecord(
