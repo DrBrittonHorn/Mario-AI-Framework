@@ -30,6 +30,7 @@ public class metricRunner {
     private static final String[] TARGET_SIZES  = { "1x1", "2x2", "3x3", "1x16", "6x6", "14x6", "14x2" };
     private static final String[] TARGET_LEVELS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "13modified", "14", "15", "all"};
 
+    /*
     public static void main(String[] args) throws IOException {
         try (DirectoryStream<Path> sizes = Files.newDirectoryStream(WFC_DIR, Files::isDirectory)) {
             for (Path sizeDir : sizes) {
@@ -60,6 +61,15 @@ public class metricRunner {
             }
         }
     }
+    */
+
+    public static void main(String[] args) throws IOException {
+    Path testPath = Paths.get("C:\\SURF\\TWFC-Reimplementation\\Mario-AI-Framework\\levels\\TestLevel.txt");
+    double density = runDensityMetric(testPath);
+    System.out.printf("Density metric for TestLevel.txt: %.4f%n", density);
+
+    //  Comment above out and un-comment out original main method when ready to do various things !
+}
 
     private static void runAllMetrics(Path lvlPath, Path originalPath, int M, int N, String baseLevelId, int seed) {
         
@@ -295,27 +305,27 @@ public class metricRunner {
 
             for (int x = 0; x < cols; x++) {
                 char tile = row.charAt(x);
-                boolean isStandable = isPlatformTile(tile) &&
-                                    (rowAbove == null || isEmpty(rowAbove.charAt(x)));
+
+                if (y == 0) {
+                    // Skip counting platform tiles on the top row
+                    continue;
+                }
+
+                boolean isStandable = isPlatformTile(tile) && isEmpty(rowAbove.charAt(x));
                 if (isStandable) {
                     platformCounts[x]++;
                 }
             }
         }
 
-        // Compute average density
+        // Compute average density (not normalized)
         double sum = 0;
-        int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
         for (int count : platformCounts) {
             sum += count;
-            if (count < min) min = count;
-            if (count > max) max = count;
         }
-        double avg = sum / cols;
-
-        // Normalize: if max == min, return 1.0 (flat density)
-        return (max == min) ? 1.0 : (avg - min) / (max - min);
+        return sum / cols;
     }
+
     
     private static void writeCsvRecord(
             String level,
