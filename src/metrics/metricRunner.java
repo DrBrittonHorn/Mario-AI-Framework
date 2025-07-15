@@ -27,8 +27,8 @@ public class metricRunner {
         "tmp-lvl-([\\dA-Za-z]+)-M(\\d+)-N(\\d+)-s-?(\\d+)\\.txt"
     );
 
-    private static final String[] TARGET_SIZES  = { "1x1", "2x2", "3x3", "1x16", "6x6", "7x5", "14x6", "15x2" };
-    private static final String[] TARGET_LEVELS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15" };
+    private static final String[] TARGET_SIZES  = { "1x1", "2x2", "3x3", "1x16", "6x6", "14x6", "15x2" };
+    private static final String[] TARGET_LEVELS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "13modified", "14", "15", "all"};
 
     public static void main(String[] args) throws IOException {
         try (DirectoryStream<Path> sizes = Files.newDirectoryStream(WFC_DIR, Files::isDirectory)) {

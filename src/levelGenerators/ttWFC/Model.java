@@ -1,4 +1,5 @@
 package levelGenerators.ttWFC;
+import java.util.List;
 import java.util.Random;
 import java.lang.Math;
 
@@ -10,6 +11,8 @@ abstract class Model
     protected boolean[] leftAllowed;
     protected boolean[] rightAllowed;
     protected boolean skipMF;
+    protected List<Integer> finishPatterns;
+    protected List<Integer> marioPatterns;
     protected int mPatternIndex, fPatternIndex, fPreobserveIndex, mPreobserveIndex;
     protected int[][][] propagator;
     int[][][] compatible;
@@ -267,8 +270,19 @@ abstract class Model
             if (DEBUG) dumpCompleteWave("after m/f propagate");
 
             //BAN THEM EVERYWHERE ELSE
-            for (int i = 0; i < MX*MY; i++) if (i != mPreobserveIndex) Ban(i, mPatternIndex);
-            for (int i = 0; i < MX*MY; i++) if (i != fPreobserveIndex) Ban(i, fPatternIndex);
+            for (int i = 0; i < MX * MY; i++) {
+                if (i == mPreobserveIndex) continue;
+                for (int pat : marioPatterns) {
+                    Ban(i, pat);
+                }
+            }
+            for (int i = 0; i < MX * MY; i++) {
+                if (i == fPreobserveIndex) continue;
+                for (int pat : finishPatterns) {
+                    Ban(i, pat);
+                }
+            }
+            Propagate();
             Propagate();
             if (DEBUG) dumpWave("after else m/f propagate");
         }

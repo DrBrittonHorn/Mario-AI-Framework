@@ -168,12 +168,19 @@ public class OverlappingModel extends Model
         int [] tileSampleLvl1 = new int[tileCols * tileRows];
         tiles = new ArrayList<>();
         List<Integer> fTiles = new ArrayList<>();
-        List<Integer> mTiles = new ArrayList<>();
+        List<Integer> fp = new ArrayList<>();
+        List<Integer> mp = new ArrayList<>();
+        List<Integer> mTilesBlanks = new ArrayList<>();
+        List<Integer> mTilesGrounds = new ArrayList<>();
+        List<Integer> mTilesUndergrounds = new ArrayList<>();
         List<int[]> mLocations = new ArrayList<>();
         List<int[]> fLocations = new ArrayList<>();
         enemiesRemovedtiles = new ArrayList<>();
         for (int i = 0; i < charBitmaps.size(); i++) {
             boolean trackF = (i != 1 && i != 7);
+            boolean trackMarioUnderground = (i == 2 || i == 8);
+            boolean trackMarioBlank = (i == 3 || i == 6 || i == 10 || i == 13);
+            boolean trackMarioGround = (i != 3 && i != 6 && i != 10 && i != 13 && i != 2 && i != 8);
             char[] currentBitmap = charBitmaps.get(i);
             List<String> line = multipleLines.get(i);
             SX = line.get(0).length();
@@ -213,13 +220,29 @@ public class OverlappingModel extends Model
                     }
                     for (char c : tile) {
                         if (c == 'M') {
-                          mTiles.add(k);
                           mLocations.add(new int[]{i, flatInd});
+                          mp.add(k);
+                          System.out.println(tile);
+                          break;
+                        }
+                        if (c == 'M' && trackMarioGround) {
+                          mTilesGrounds.add(k);
+                          System.out.println(tile);
+                          break;
+                        }
+                        if (c == 'M' && trackMarioBlank) {
+                          mTilesBlanks.add(k);
+                          System.out.println(tile);
+                          break;
+                        }
+                        if (c == 'M' && trackMarioUnderground) {
+                          mTilesUndergrounds.add(k);
                           System.out.println(tile);
                           break;
                         }
                         if (c == 'F') {
                             fLocations.add(new int[]{i, flatInd});
+                            fp.add(k);
                             break;
                         }
                       }
@@ -248,11 +271,19 @@ public class OverlappingModel extends Model
             }
             tileSamples.add(localTileSample);
         }
+        this.finishPatterns = fp;
+        this.marioPatterns = mp;
         if (!fTiles.isEmpty()) {
             similarTiles.add(new ArrayList<>(fTiles));
           }
-        if (!fTiles.isEmpty()) {
-            similarTiles.add(new ArrayList<>(fTiles));
+        if (!mTilesBlanks.isEmpty()) {
+            similarTiles.add(new ArrayList<>(mTilesBlanks));
+        }
+        if (!mTilesGrounds.isEmpty()) {
+            similarTiles.add(new ArrayList<>(mTilesGrounds));
+        }
+        if (!mTilesUndergrounds.isEmpty()) {
+            similarTiles.add(new ArrayList<>(mTilesUndergrounds));
         }
         if ("all".equals(name)) {
             // origSX  = lvl1OrigSX;
