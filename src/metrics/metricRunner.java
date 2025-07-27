@@ -46,7 +46,11 @@ public class metricRunner {
 
                         String baseLevelId = m.group(1);
                         if (!Arrays.asList(TARGET_LEVELS).contains(baseLevelId)) continue;
-
+                        if ("all".equals(baseLevelId)) {
+                            originalPath = ORIGINAL_DIR.resolve("lvl-1.txt");
+                        } else {
+                            originalPath = ORIGINAL_DIR.resolve("lvl-" + baseLevelId + ".txt");
+                        }
                         int seed = Integer.parseInt(m.group(4));
                         Path originalPath = ORIGINAL_DIR.resolve("lvl-" + baseLevelId + ".txt");
                         if (!Files.exists(originalPath)) {
@@ -320,6 +324,106 @@ public class metricRunner {
         return sum / cols;
     }
 
+    public static double runLeniency(Path lvlPath) throws IOException {
+        List<String> lines = Files.readAllLines(lvlPath);
+
+        int    gaps    = countLevelGaps(lines);
+        double avgGapW = averageLevelGapWidth(lines);
+        int    enemies = countLevelEnemies(lines);
+        int    pipes   = countLevelPipes(lines);
+
+        return gaps   * -0.5
+            + avgGapW * -1.0
+            + enemies * -1.0
+            + pipes   * -0.5;
+    }
+    private static List<Integer> collectAllGapWidths(List<String> lines) {
+        List<Integer> gapWidths = new ArrayList<>();
+        int rows = lines.size();
+        if (rows == 0) return gapWidths;
+        int cols = lines.get(0).length();
+
+        for (int y = 0; y < rows; y++) {
+            String row      = lines.get(y);
+            String rowAbove = (y == 0) ? null : lines.get(y - 1);
+
+            List<int[]> segments = new ArrayList<>();
+            boolean inPlat = false;
+            int start = 0;
+            for (int x = 0; x < cols; x++) {
+                boolean qualifies = isPlatformTile(row.charAt(x)) && (isEmpty(rowAbove.charAt(x)));
+                if (qualifies) {
+                    if (!inPlat) {
+                        inPlat = true;
+                        start = x;
+                    }
+                } else if (inPlat) {
+                    segments.add(new int[]{ start, x - 1 });
+                    inPlat = false;
+                }
+            }
+            if (inPlat) {
+                // trailing segment
+                segments.add(new int[]{ start, cols - 1 });
+            }
+
+            // between each consecutive pair of segments compute the gap
+            for (int i = 0; i + 1 < segments.size(); i++) {
+                int endOfFirst  = segments.get(i)[1];
+                int startOfNext = segments.get(i + 1)[0];
+                int gapWidth    = startOfNext - (endOfFirst + 1);
+                if (gapWidth > 0) {
+                    gapWidths.add(gapWidth);
+                }
+            }
+        }
+        return gapWidths;
+    }
+
+    private static int countLevelGaps(List<String> lines) {
+        return collectAllGapWidths(lines).size();
+    }
+
+    private static double averageLevelGapWidth(List<String> lines) {
+        List<Integer> widths = collectAllGapWidths(lines);
+        if (widths.isEmpty()) return 0.0;
+        int sum = widths.stream().mapToInt(Integer::intValue).sum();
+        return sum / (double) widths.size();
+    }
+    private static int countLevelEnemies(List<String> lines) {
+        Set<Character> enemies = Set.of(
+            'g','G',  // goomba
+            'r','R',  // red koopa
+            'k','K',  // green koopa
+            'y','Y'   // spiky
+        );
+        int cnt = 0;
+        for (String row : lines) {
+            for (char c : row.toCharArray()) {
+                if (enemies.contains(c)) {
+                    cnt++;
+                }
+            }
+        }
+        return cnt;
+    }
+
+    /** Count of all pipe & cannon tiles in the level. */
+    private static int countLevelPipes(List<String> lines) {
+        Set<Character> pipes = Set.of(
+            'T', // pipe + flower
+            '*' // bullet bill
+        );
+        int cnt = 0;
+        for (String row : lines) {
+            for (char c : row.toCharArray()) {
+                if (pipes.contains(c)) {
+                    cnt++;
+                }
+            }
+        }
+        return cnt;
+    }
     
     private static void writeCsvRecord(
             String level,

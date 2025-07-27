@@ -13,8 +13,8 @@ import java.util.Random;
 public class BatchRunner {
     public static void main(String[] args) throws Exception {
         String[] samples   = {"all"};
-        int[]    Ms        = { 14};
-        int[]    Ns        = { 6};
+        int[]    Ms        = { 1};
+        int[]    Ns        = { 16};
         int      repeats   = 1000;  // how many outputs will be created per MxN size and sample
         int      attemptsPerRepeat = 10000;     
         MarioGame game     = new MarioGame();
