@@ -24,11 +24,13 @@ public class metricRunner {
     private static final Path ORIGINAL_DIR = Paths.get("levels", "original");
     // file pattern: tmp-lvl-<baseId>-M<M>-N<N>-s<seed>.txt
     private static final Pattern FILENAME = Pattern.compile(
-        "tmp-lvl-([\\dA-Za-z]+)-M(\\d+)-N(\\d+)-s-?(\\d+)\\.txt"
+        "tmp-(?:lvl-)?([\\dA-Za-z]+)-M(\\d+)-N(\\d+)-s-?(\\d+)\\.txt"
     );
 
-    private static final String[] TARGET_SIZES  = { "1x1", "2x2", "3x3", "1x16", "6x6", "14x6", "14x2" };
-    private static final String[] TARGET_LEVELS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "13modified", "14", "15", "all"};
+    // private static final String[] TARGET_SIZES  = { "1x1", "2x2", "3x3", "1x16", "6x6", "14x6", "14x2"};
+    private static final String[] TARGET_SIZES  = { "1x16"};
+    // private static final String[] TARGET_LEVELS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "13modified", "14", "15", "all"};
+    private static final String[] TARGET_LEVELS = {"all"};
 
     public static void main(String[] args) throws IOException {
         try (DirectoryStream<Path> sizes = Files.newDirectoryStream(WFC_DIR, Files::isDirectory)) {
@@ -43,7 +45,7 @@ public class metricRunner {
                     for (Path lvlPath : levels) {
                         Matcher m = FILENAME.matcher(lvlPath.getFileName().toString());
                         if (!m.matches()) continue;
-
+                        Path originalPath;
                         String baseLevelId = m.group(1);
                         if (!Arrays.asList(TARGET_LEVELS).contains(baseLevelId)) continue;
                         if ("all".equals(baseLevelId)) {
@@ -52,7 +54,7 @@ public class metricRunner {
                             originalPath = ORIGINAL_DIR.resolve("lvl-" + baseLevelId + ".txt");
                         }
                         int seed = Integer.parseInt(m.group(4));
-                        Path originalPath = ORIGINAL_DIR.resolve("lvl-" + baseLevelId + ".txt");
+                        // Path originalPath = ORIGINAL_DIR.resolve("lvl-" + baseLevelId + ".txt");
                         if (!Files.exists(originalPath)) {
                             System.err.println(" Missing original lvl-" + baseLevelId);
                             continue;
@@ -77,24 +79,23 @@ public class metricRunner {
     private static void runAllMetrics(Path lvlPath, Path originalPath, int M, int N, String baseLevelId, int seed) {
         
         try {
-            double dist = runCompression(lvlPath, originalPath);
+            // double dist = runCompression(lvlPath, originalPath);
             // System.out.printf("   distance = %.6f%n", dist);
-            writeCsvRecord(baseLevelId, M, N, seed, "compressionDistance", Double.toString(dist));
-            int ed = runEditDistance(lvlPath, originalPath);
+            // writeCsvRecord(baseLevelId, M, N, seed, "compressionDistance", Double.toString(dist));
+            // int ed = runEditDistance(lvlPath, originalPath);
             // System.out.printf("   editDistance = %d%n", ed);
-            writeCsvRecord(baseLevelId, M, N, seed,"editDistance", Integer.toString(ed));
-            double completionPct = runAgentOnLevel(lvlPath);
+            // writeCsvRecord(baseLevelId, M, N, seed,"editDistance", Integer.toString(ed));
+            // double completionPct = runAgentOnLevel(lvlPath);
             // System.out.printf("   agent completion = %.2f%%%n", completionPct);
-            writeCsvRecord( baseLevelId, M, N, seed, "completionPct", String.format("%.2f", completionPct));
-            double dens = runPatternDensity(lvlPath, M, N);
-            writeCsvRecord(baseLevelId, M, N, seed, "patternDensity", String.format("%.4f", dens));
-            double var  = runPatternVariationEntropy(lvlPath, M, N); 
-            writeCsvRecord(baseLevelId, M, N, seed, "patternVariation", String.format("%.4f", var));
-            double density = runDensityMetric(lvlPath);
-            writeCsvRecord(baseLevelId, M, N, seed, "densityMetric", String.format("%.4f", density));
-            double rSquared = runLinearity(lvlPath);
-            writeCsvRecord(baseLevelId, M, N, seed, "linearityRSquared",
-            Double.isNaN(rSquared) ? "NaN" : String.format("%.4f", rSquared));
+            // writeCsvRecord( baseLevelId, M, N, seed, "completionPct", String.format("%.2f", completionPct));
+            // double density = runDensityMetric(lvlPath);
+            // writeCsvRecord(baseLevelId, M, N, seed, "densityMetric", String.format("%.4f", density));
+            // double rSquared = runLinearity(lvlPath);
+            // writeCsvRecord(baseLevelId, M, N, seed, "linearityRSquared",
+            // Double.isNaN(rSquared) ? "NaN" : String.format("%.4f", rSquared));
+            double len = runLeniency(lvlPath);
+            writeCsvRecord(baseLevelId, M, N, seed, "Leniency",
+            Double.isNaN(len) ? "NaN" : String.format("%.4f", len));
         } catch (IOException e) {
             System.err.println("failed: " + e.getMessage());
         }
@@ -126,7 +127,7 @@ public class metricRunner {
         model.copyFromString(String.join("\n", lines));
 
         MarioGame game = new MarioGame();
-        MarioResult res = game.runGame(new Agent(), model.getMap(),40,0,false);
+        MarioResult res = game.runGame(new Agent(), model.getMap(),15,0,false);
 
         return res.getCompletionPercentage();
     }
@@ -239,16 +240,15 @@ public class metricRunner {
 
             String row      = lines.get(fileRow);
             String rowAbove = (fileRow == 0) ? null : lines.get(fileRow - 1);
-
+            if(rowAbove == null) continue;
             int col = 0;
             while (col < cols) {
-                boolean qualifies = isPlatformTile(row.charAt(col)) && (rowAbove == null || isEmpty(rowAbove.charAt(col)));
+                boolean qualifies = isPlatformTile(row.charAt(col)) && (isEmpty(rowAbove.charAt(col)));
                 if (!qualifies) { col++; continue; }
                 int start = col;
                 while (col < cols) {
                     char c = row.charAt(col);
-                    boolean ok = isPlatformTile(c) &&
-                                (rowAbove == null || isEmpty(rowAbove.charAt(col)));
+                    boolean ok = isPlatformTile(c) && (isEmpty(rowAbove.charAt(col)));
                     if (!ok) break;   
                     col++;
                 }

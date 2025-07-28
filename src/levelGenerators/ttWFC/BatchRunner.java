@@ -17,7 +17,7 @@ public class BatchRunner {
         int[]    Ns        = { 16};
         int      repeats   = 1000;  // how many outputs will be created per MxN size and sample
         int      attemptsPerRepeat = 10000;     
-        MarioGame game     = new MarioGame();
+        // MarioGame game     = new MarioGame();
         try (PrintWriter csv = new PrintWriter(new FileWriter("ttwfc_results.csv"))) {
             csv.println("sample,M,N,seed,gameStatus,completion,lives,coins,time,jumps,kills");
             List<String> lines;
