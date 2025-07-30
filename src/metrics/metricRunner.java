@@ -27,7 +27,7 @@ public class metricRunner {
         "tmp-(?:lvl-)?([\\dA-Za-z]+)-M(\\d+)-N(\\d+)-s-?(\\d+)\\.txt"
     );
 
-    private static final String[] TARGET_SIZES  = { /* "1x1", "2x2", "3x3", */ "4x4", "5x5", /* "1x16", "6x6", "14x6", "14x2"*/};
+    private static final String[] TARGET_SIZES  = {"1x1", "2x2", "3x3", "4x4", "5x5",  "1x16", "6x6", "14x6", "14x2"};
     private static final String[] TARGET_LEVELS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "13modified", "14", "15", "all"};
 
     public static void main(String[] args) throws IOException {
@@ -86,11 +86,11 @@ public class metricRunner {
             double completionPct = runAgentOnLevel(lvlPath);
             System.out.printf("   agent completion = %.2f%%%n", completionPct);
             writeCsvRecord( baseLevelId, M, N, seed, "completionPct", String.format("%.2f", completionPct));
-            // double density = runDensityMetric(lvlPath);
-            // writeCsvRecord(baseLevelId, M, N, seed, "densityMetric", String.format("%.4f", density));
-            // double rSquared = runLinearity(lvlPath);
-            // writeCsvRecord(baseLevelId, M, N, seed, "linearityRSquared",
-            // Double.isNaN(rSquared) ? "NaN" : String.format("%.4f", rSquared));
+            double density = runDensityMetric(lvlPath);
+            writeCsvRecord(baseLevelId, M, N, seed, "densityMetric", String.format("%.4f", density));
+            double rSquared = runLinearity(lvlPath);
+            writeCsvRecord(baseLevelId, M, N, seed, "linearityRSquared",
+            Double.isNaN(rSquared) ? "NaN" : String.format("%.4f", rSquared));
             double len = runLeniency(lvlPath);
             writeCsvRecord(baseLevelId, M, N, seed, "Leniency",
             Double.isNaN(len) ? "NaN" : String.format("%.4f", len));
