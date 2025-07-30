@@ -27,10 +27,8 @@ public class metricRunner {
         "tmp-(?:lvl-)?([\\dA-Za-z]+)-M(\\d+)-N(\\d+)-s-?(\\d+)\\.txt"
     );
 
-    // private static final String[] TARGET_SIZES  = { "1x1", "2x2", "3x3", "1x16", "6x6", "14x6", "14x2"};
-    private static final String[] TARGET_SIZES  = { "1x16"};
-    // private static final String[] TARGET_LEVELS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "13modified", "14", "15", "all"};
-    private static final String[] TARGET_LEVELS = {"all"};
+    private static final String[] TARGET_SIZES  = { /* "1x1", "2x2", "3x3", */ "4x4", "5x5", /* "1x16", "6x6", "14x6", "14x2"*/};
+    private static final String[] TARGET_LEVELS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "13modified", "14", "15", "all"};
 
     public static void main(String[] args) throws IOException {
         try (DirectoryStream<Path> sizes = Files.newDirectoryStream(WFC_DIR, Files::isDirectory)) {
@@ -79,15 +77,15 @@ public class metricRunner {
     private static void runAllMetrics(Path lvlPath, Path originalPath, int M, int N, String baseLevelId, int seed) {
         
         try {
-            // double dist = runCompression(lvlPath, originalPath);
-            // System.out.printf("   distance = %.6f%n", dist);
-            // writeCsvRecord(baseLevelId, M, N, seed, "compressionDistance", Double.toString(dist));
-            // int ed = runEditDistance(lvlPath, originalPath);
-            // System.out.printf("   editDistance = %d%n", ed);
-            // writeCsvRecord(baseLevelId, M, N, seed,"editDistance", Integer.toString(ed));
-            // double completionPct = runAgentOnLevel(lvlPath);
-            // System.out.printf("   agent completion = %.2f%%%n", completionPct);
-            // writeCsvRecord( baseLevelId, M, N, seed, "completionPct", String.format("%.2f", completionPct));
+            double dist = runCompression(lvlPath, originalPath);
+            System.out.printf("   distance = %.6f%n", dist);
+            writeCsvRecord(baseLevelId, M, N, seed, "compressionDistance", Double.toString(dist));
+            int ed = runEditDistance(lvlPath, originalPath);
+            System.out.printf("   editDistance = %d%n", ed);
+            writeCsvRecord(baseLevelId, M, N, seed,"editDistance", Integer.toString(ed));
+            double completionPct = runAgentOnLevel(lvlPath);
+            System.out.printf("   agent completion = %.2f%%%n", completionPct);
+            writeCsvRecord( baseLevelId, M, N, seed, "completionPct", String.format("%.2f", completionPct));
             // double density = runDensityMetric(lvlPath);
             // writeCsvRecord(baseLevelId, M, N, seed, "densityMetric", String.format("%.4f", density));
             // double rSquared = runLinearity(lvlPath);
