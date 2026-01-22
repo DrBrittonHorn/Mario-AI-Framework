@@ -226,6 +226,10 @@ public class MarioForwardModel {
         this.world = world;
     }
 
+    public MarioWorld getWorld() {
+        return this.world.clone();
+    }
+
     /**
      * Create a clone from the current forward model state
      *

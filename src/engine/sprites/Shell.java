@@ -276,4 +276,9 @@ public class Shell extends MarioSprite {
         }
         return false;
     }
+
+    public boolean isOnGround() {
+        return onGround;
+    }
+
 }

@@ -526,4 +526,17 @@ public class MarioWorld {
             this.effects.get(i).render(og, cameraX, cameraY);
         }
     }
+
+    public ArrayList<MarioSprite> getSpriteClones() {
+        ArrayList<MarioSprite> spritesClone = new ArrayList<>();
+
+        for (MarioSprite sprite : this.sprites) {
+            MarioSprite spriteClone = sprite.clone();
+            spriteClone.world = this;
+            spritesClone.add(spriteClone);
+        }
+
+        return spritesClone;
+    }
+
 }

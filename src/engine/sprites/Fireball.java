@@ -190,4 +190,8 @@ public class Fireball extends MarioSprite {
         super.render(og);
         this.graphics.render(og, (int) (this.x - this.world.cameraX), (int) (this.y - this.world.cameraY));
     }
+        public boolean isOnGround() {
+        return onGround;
+    }
+
 }

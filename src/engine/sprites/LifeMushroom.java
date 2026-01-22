@@ -210,4 +210,13 @@ public class LifeMushroom extends MarioSprite {
 
         this.graphics.render(og, (int) (this.x - this.world.cameraX), (int) (this.y - this.world.cameraY));
     }
+
+    public boolean isOnGround() {
+        return onGround;
+    }
+
+    public int getLife() {
+        return life;
+    }
+
 }

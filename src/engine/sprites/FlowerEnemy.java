@@ -71,4 +71,13 @@ public class FlowerEnemy extends Enemy {
             this.graphics.index = this.type.getStartIndex() + ((tick / 2) & 1) * 2 + ((tick / 6) & 1);
         }
     }
+
+    public float getyStart() {
+        return yStart;
+    }
+
+    public int getWaitTime() {
+        return waitTime;
+    }
+
 }

@@ -501,4 +501,24 @@ public class Mario extends MarioSprite {
 
         this.graphics.render(og, (int) (this.x - this.world.cameraX), (int) (this.y - this.world.cameraY));
     }
+    public static class PrivateMarioCopyInfo {
+        public int invulnerableTime;
+        public boolean oldLarge;
+        public boolean oldFire;
+        public float xJumpSpeed;
+        public float yJumpSpeed;
+        public float xJumpStart;
+    }
+
+    public PrivateMarioCopyInfo getPrivateMarioCopyInfo() {
+        PrivateMarioCopyInfo info = new PrivateMarioCopyInfo();
+        info.invulnerableTime = this.invulnerableTime;
+        info.oldLarge = this.oldLarge;
+        info.oldFire = this.oldFire;
+        info.xJumpSpeed = this.xJumpSpeed;
+        info.yJumpSpeed = this.yJumpSpeed;
+        info.xJumpStart = this.xJumpStart;
+        return info;
+    }
+
 }
