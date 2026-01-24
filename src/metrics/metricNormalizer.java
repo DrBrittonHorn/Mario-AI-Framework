@@ -9,11 +9,11 @@ public class metricNormalizer {
     public static void main(String[] args) throws IOException {
         Path base      = Paths.get("src", "metrics");
         Path mergedDir = base.resolve("mergedMetrics");
-        Path inputFile = mergedDir.resolve("mergedMetrics.csv");
-        Path outputFile= mergedDir.resolve("completedMetrics.csv");
+        Path inputFile = mergedDir.resolve("completedMetricsCOMPFixWOAll.csv");
+        Path outputFile= mergedDir.resolve("completedMetricsNormWOAll.csv");
 
         //METRICS TO NORMALIZE
-        List<String> toNorm = Arrays.asList("densityMetric", "leniencyMetric");
+        List<String> toNorm = Arrays.asList("compressionDistance");
 
         List<String[]> rows = new ArrayList<>();
         String[] headerCols;
