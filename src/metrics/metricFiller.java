@@ -1,5 +1,6 @@
 package metrics;
 
+import agents.MFFAgentAdapter;
 import agents.robinBaumgarten.Agent;
 import engine.core.MarioGame;
 import engine.core.MarioLevelModel;
@@ -14,9 +15,9 @@ public class metricFiller {
 
     private static final Path WFC_DIR = Paths.get("levels", "WaveFunctionCollapse");
     private static final Path ORIGINAL_DIR = Paths.get("levels", "original");
-    private static final Path METRICS_DIR = Paths.get("src", "metrics", "mergedMetrics");
-    private static final Path INPUT_CSV = METRICS_DIR.resolve("completedMetricsCOMP.csv");
-    private static final Path OUTPUT_CSV = METRICS_DIR.resolve("completedMetricsCOMPFix.csv");
+    private static final Path METRICS_DIR = Paths.get("src", "metrics", "completedMetrics");
+    private static final Path INPUT_CSV = METRICS_DIR.resolve("completedMetricsNormWithAll.csv");
+    private static final Path OUTPUT_CSV = METRICS_DIR.resolve("completedMetricsNormWithAll.csv");
 
     private static final Set<Character> PLATFORM_TILES = Set.of('X','#','S','C','L','U','@','!','2','1','D','t','T','%');
     private static final Set<Character> ENEMY_TILES = Set.of('g','G','r','R','k','K','y','Y', '|', 'o', '*');
@@ -49,7 +50,18 @@ public class metricFiller {
             String line;
             while ((line = br.readLine()) != null) {
                 if (line.trim().isEmpty()) continue;
-                rows.add(line.split(",", -1));
+                String[] rowData = line.split(",", -1);
+
+                if (rowData.length < header.length) {
+                    String[] paddedRow = new String[header.length];
+                    System.arraycopy(rowData, 0, paddedRow, 0, rowData.length);
+                    for (int i = rowData.length; i < header.length; i++) {
+                        paddedRow[i] = "";
+                    }
+                    rows.add(paddedRow);
+                } else {
+                    rows.add(rowData);
+                }
             }
         }
 
@@ -61,7 +73,7 @@ public class metricFiller {
         }
 
         String[] metrics = {"completionPct", "compressionDistance", "editDistance",
-                           "densityMetric", "leniencyMetric", "linearityRSquared"};
+                           "densityMetric", "leniencyMetric", "linearityRSquared", "completionPctAstar"};
 
         int filledCount = 0;
 
@@ -160,6 +172,8 @@ public class metricFiller {
         switch (metric) {
             case "completionPct":
                 return String.format("%.2f", runAgentOnLevel(levelPath));
+            case "completionPctAstar":
+                return String.format("%.2f", runAgentOnLevelAstar(levelPath));
             case "compressionDistance":
                 return String.format("%.6f", runCompression(levelPath, originalPath));
             case "editDistance":
@@ -232,7 +246,20 @@ public class metricFiller {
         model.copyFromString(String.join("\n", lines));
 
         MarioGame game = new MarioGame();
-        MarioResult res = game.runGame(new Agent(), model.getMap(),15,0,false);
+        MarioResult res = game.runGame(new Agent(), model.getMap(),20,0,false);
+
+        return res.getCompletionPercentage();
+    }
+    public static double runAgentOnLevelAstar(Path genPath) throws IOException {
+        List<String> lines = Files.readAllLines(genPath);
+        int height = lines.size();
+        int width  = lines.get(0).length();
+
+        MarioLevelModel model = new MarioLevelModel(width, height);
+        model.copyFromString(String.join("\n", lines));
+
+        MarioGame game = new MarioGame();
+        MarioResult res = game.runGame(new MFFAgentAdapter(new mff.agents.astar.Agent()), model.getMap(),20,0,false);
 
         return res.getCompletionPercentage();
     }
