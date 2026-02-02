@@ -17,11 +17,12 @@ public class MarioUpdateContextSlim {
     final ArrayList<MarioSpriteSlim> addedSprites = new ArrayList<>();
     final ArrayList<MarioSpriteSlim> removedSprites = new ArrayList<>();
 
-    private static final ArrayDeque<MarioUpdateContextSlim> pool = new ArrayDeque<>();
-    //private static final ArrayBlockingQueue<MarioUpdateContextSlim> pool = new ArrayBlockingQueue<>(); //TODO might be thread safe and fast?
+    // ThreadLocal pool - each thread gets its own pool for thread safety
+    private static final ThreadLocal<ArrayDeque<MarioUpdateContextSlim>> pool =
+        ThreadLocal.withInitial(ArrayDeque::new);
 
     public static MarioUpdateContextSlim get() {
-        MarioUpdateContextSlim ctx = pool.poll();
+        MarioUpdateContextSlim ctx = pool.get().poll();
         if (ctx != null) return ctx;
 
         MarioUpdateContextSlim newCtx = new MarioUpdateContextSlim();
@@ -31,6 +32,6 @@ public class MarioUpdateContextSlim {
     }
 
     static void back(MarioUpdateContextSlim ctx) {
-        pool.add(ctx);
+        pool.get().add(ctx);
     }
 }

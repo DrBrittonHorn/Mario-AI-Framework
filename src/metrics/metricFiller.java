@@ -8,6 +8,8 @@ import engine.core.MarioResult;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.Deflater;
 import java.awt.geom.Point2D;
 
@@ -17,7 +19,7 @@ public class metricFiller {
     private static final Path ORIGINAL_DIR = Paths.get("levels", "original");
     private static final Path METRICS_DIR = Paths.get("src", "metrics", "completedMetrics");
     private static final Path INPUT_CSV = METRICS_DIR.resolve("completedMetricsNormWithAll.csv");
-    private static final Path OUTPUT_CSV = METRICS_DIR.resolve("completedMetricsNormWithAll.csv");
+    private static final Path OUTPUT_CSV = METRICS_DIR.resolve("completedMetricsNormWithAll-planningOnly.csv");
 
     private static final Set<Character> PLATFORM_TILES = Set.of('X','#','S','C','L','U','@','!','2','1','D','t','T','%');
     private static final Set<Character> ENEMY_TILES = Set.of('g','G','r','R','k','K','y','Y', '|', 'o', '*');
@@ -30,7 +32,10 @@ public class metricFiller {
         return PLATFORM_TILES.contains(ch);
     }
 
-    public static void main(String[] args) throws IOException {
+    // Number of parallel threads - adjust based on your CPU cores
+    private static final int NUM_THREADS = Runtime.getRuntime().availableProcessors();
+
+    public static void main(String[] args) throws IOException, InterruptedException {
         if (!Files.exists(INPUT_CSV)) {
             System.err.println("Input CSV not found: " + INPUT_CSV);
             return;
@@ -66,6 +71,7 @@ public class metricFiller {
         }
 
         System.out.println("Loaded " + rows.size() + " rows from CSV");
+        System.out.println("Using " + NUM_THREADS + " parallel threads");
 
         Map<String, Integer> colIndex = new HashMap<>();
         for (int i = 0; i < header.length; i++) {
@@ -73,10 +79,10 @@ public class metricFiller {
         }
 
         String[] metrics = {"completionPct", "compressionDistance", "editDistance",
-                           "densityMetric", "leniencyMetric", "linearityRSquared", "completionPctAstar"};
+                           "densityMetric", "leniencyMetric", "linearityRSquared", "completionPctAstarPlanning"};
 
-        int filledCount = 0;
-
+        // Prepare tasks for rows that need processing
+        List<RowTask> tasks = new ArrayList<>();
         for (int rowIdx = 0; rowIdx < rows.size(); rowIdx++) {
             String[] row = rows.get(rowIdx);
 
@@ -84,9 +90,6 @@ public class metricFiller {
             String M = row[colIndex.get("M")];
             String N = row[colIndex.get("N")];
             String seed = row[colIndex.get("seed")];
-
-            System.out.printf("\nChecking row %d: level=%s, M=%s, N=%s, seed=%s%n",
-                            rowIdx + 1, level, M, N, seed);
 
             List<String> missingMetrics = new ArrayList<>();
             for (String metric : metrics) {
@@ -98,20 +101,18 @@ public class metricFiller {
             }
 
             if (missingMetrics.isEmpty()) {
-                System.out.println("  All metrics present");
+                
                 continue;
             }
-
-            System.out.println("  Missing metrics: " + missingMetrics);
 
             String sizeFolder = M + "x" + N;
             Path levelPath = null;
 
             String[] patterns = {
-                String.format("tmp-lvl-%s-M%s-N%s-s-%s.txt", level, M, N, seed), 
-                String.format("tmp-lvl-%s-M%s-N%s-s%s.txt", level, M, N, seed),  
-                String.format("tmp-%s-M%s-N%s-s-%s.txt", level, M, N, seed),   
-                String.format("tmp-%s-M%s-N%s-s%s.txt", level, M, N, seed)          
+                String.format("tmp-lvl-%s-M%s-N%s-s-%s.txt", level, M, N, seed),
+                String.format("tmp-lvl-%s-M%s-N%s-s%s.txt", level, M, N, seed),
+                String.format("tmp-%s-M%s-N%s-s-%s.txt", level, M, N, seed),
+                String.format("tmp-%s-M%s-N%s-s%s.txt", level, M, N, seed)
             };
 
             for (String pattern : patterns) {
@@ -123,7 +124,7 @@ public class metricFiller {
             }
 
             if (levelPath == null) {
-                System.err.println("  WARNING: Level file not found for any pattern");
+                System.err.println("WARNING: Level file not found for row " + (rowIdx + 1));
                 continue;
             }
 
@@ -135,23 +136,53 @@ public class metricFiller {
             }
 
             if (!Files.exists(originalPath)) {
-                System.err.println("  WARNING: Original level not found: " + originalPath);
+                System.err.println("WARNING: Original level not found: " + originalPath);
                 continue;
             }
 
-            for (String metric : missingMetrics) {
-                try {
-                    String value = computeMetric(metric, levelPath, originalPath);
-                    int idx = colIndex.get(metric);
-                    row[idx] = value;
-                    System.out.printf("  Filled %s = %s%n", metric, value);
-                    filledCount++;
-                } catch (Exception e) {
-                    System.err.printf("  ERROR computing %s: %s%n", metric, e.getMessage());
+            tasks.add(new RowTask(rowIdx, row, levelPath, originalPath, missingMetrics, colIndex));
+        }
+
+        System.out.println("Processing " + tasks.size() + " rows with missing metrics...\n");
+
+        // Process rows in parallel
+        ExecutorService executor = Executors.newFixedThreadPool(NUM_THREADS);
+        AtomicInteger filledCount = new AtomicInteger(0);
+        AtomicInteger completedRows = new AtomicInteger(0);
+        int totalTasks = tasks.size();
+
+        List<Future<?>> futures = new ArrayList<>();
+        for (RowTask task : tasks) {
+            futures.add(executor.submit(() -> {
+                for (String metric : task.missingMetrics) {
+                    try {
+                        String value = computeMetric(metric, task.levelPath, task.originalPath);
+                        synchronized (task.row) {
+                            task.row[task.colIndex.get(metric)] = value;
+                        }
+                        filledCount.incrementAndGet();
+                    } catch (Exception e) {
+                        System.err.printf("ERROR row %d, %s: %s%n", task.rowIdx + 1, metric, e.getMessage());
+                    }
                 }
+                int done = completedRows.incrementAndGet();
+                System.out.printf("Completed row %d (%d/%d)%n", task.rowIdx + 1, done, totalTasks);
+            }));
+        }
+
+        // Wait for all tasks to complete
+        for (Future<?> f : futures) {
+            try {
+                f.get();
+            } catch (ExecutionException e) {
+                System.err.println("Task failed: " + e.getCause().getMessage());
             }
         }
 
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.HOURS);
+
+        // Write output
         try (BufferedWriter bw = Files.newBufferedWriter(OUTPUT_CSV)) {
             bw.write(String.join(",", header));
             bw.newLine();
@@ -164,15 +195,35 @@ public class metricFiller {
 
         System.out.println("\n=== Summary ===");
         System.out.println("Total rows processed: " + rows.size());
-        System.out.println("Metrics filled: " + filledCount);
+        System.out.println("Metrics filled: " + filledCount.get());
         System.out.println("Output written to: " + OUTPUT_CSV.toAbsolutePath());
+    }
+
+    // Helper class to hold row processing data
+    private static class RowTask {
+        final int rowIdx;
+        final String[] row;
+        final Path levelPath;
+        final Path originalPath;
+        final List<String> missingMetrics;
+        final Map<String, Integer> colIndex;
+
+        RowTask(int rowIdx, String[] row, Path levelPath, Path originalPath,
+                List<String> missingMetrics, Map<String, Integer> colIndex) {
+            this.rowIdx = rowIdx;
+            this.row = row;
+            this.levelPath = levelPath;
+            this.originalPath = originalPath;
+            this.missingMetrics = missingMetrics;
+            this.colIndex = colIndex;
+        }
     }
 
     private static String computeMetric(String metric, Path levelPath, Path originalPath) throws IOException {
         switch (metric) {
             case "completionPct":
                 return String.format("%.2f", runAgentOnLevel(levelPath));
-            case "completionPctAstar":
+            case "completionPctAstarPlanning":
                 return String.format("%.2f", runAgentOnLevelAstar(levelPath));
             case "compressionDistance":
                 return String.format("%.6f", runCompression(levelPath, originalPath));
@@ -259,7 +310,7 @@ public class metricFiller {
         model.copyFromString(String.join("\n", lines));
 
         MarioGame game = new MarioGame();
-        MarioResult res = game.runGame(new MFFAgentAdapter(new mff.agents.astar.Agent()), model.getMap(),20,0,false);
+        MarioResult res = game.runGame(new MFFAgentAdapter(new mff.agents.astarPlanning.Agent()), model.getMap(),20,0,false);
 
         return res.getCompletionPercentage();
     }

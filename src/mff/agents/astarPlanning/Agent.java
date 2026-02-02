@@ -44,7 +44,7 @@ public class Agent implements IMarioAgentMFF {
             int baseTimeTicks = 10;
             ticksRemaining = baseTimeTicks * ticksMultiplier;
             startTimeTicks += ticksRemaining;
-            System.out.println("Staring search with " + ticksRemaining + " ticks");
+            //System.out.println("Staring search with " + ticksRemaining + " ticks");
             ticksMultiplier *= 2;
             MarioForwardModelSlim futureModel = startPoint.clone();
             for (int i = 0; i < ticksRemaining; i++) {

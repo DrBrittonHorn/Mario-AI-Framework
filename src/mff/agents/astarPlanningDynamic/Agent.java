@@ -17,10 +17,11 @@ public class Agent implements  IMarioAgentMFF, IAgentBenchmark {
     private boolean winFoundDuringTempSearch;
     private int totalSearchCalls = 0;
     private int totalNodesEvaluated = 0;
+    private float exitTileX;
 
     @Override
     public void initialize(MarioForwardModelSlim model) {
-        AStarTree.exitTileX = model.getWorld().level.exitTileX * 16;
+        exitTileX = model.getWorld().level.exitTileX * 16;
     }
 
     @Override
@@ -46,7 +47,7 @@ public class Agent implements  IMarioAgentMFF, IAgentBenchmark {
 
         if (findTempPlan) {
             findTempPlan = false;
-            AStarTree tree = new AStarTree();
+            AStarTree tree = new AStarTree(exitTileX);
             tree.initPlanAhead(model, 3);
             tree.planAhead(timer);
             totalSearchCalls++;
@@ -67,7 +68,7 @@ public class Agent implements  IMarioAgentMFF, IAgentBenchmark {
         if (startNewFinishSearch) {
             //System.out.println("New finish search init");
             startNewFinishSearch = false;
-            tree = new AStarTree();
+            tree = new AStarTree(exitTileX);
             for (int i = 0; i < actionsList.size(); i++) {
                 model.advance(actionsList.get(actionsList.size() - (1 + i)));
             }

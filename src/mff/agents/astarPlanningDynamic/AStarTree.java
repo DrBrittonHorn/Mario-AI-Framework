@@ -21,8 +21,12 @@ public class AStarTree {
     int searchSteps;
     boolean winFound = false;
 
-    static float exitTileX;
+    final float exitTileX;
     static final float maxMarioSpeedX = 10.91f;
+
+    public AStarTree(float exitTileX) {
+        this.exitTileX = exitTileX;
+    }
 
     public int nodesEvaluated = 0;
 
