@@ -19,7 +19,7 @@ public class metricFiller {
     private static final Path ORIGINAL_DIR = Paths.get("levels", "original");
     private static final Path METRICS_DIR = Paths.get("src", "metrics", "completedMetrics");
     private static final Path INPUT_CSV = METRICS_DIR.resolve("completedMetricsNormWithAll.csv");
-    private static final Path OUTPUT_CSV = METRICS_DIR.resolve("completedMetricsNormWithAll-planningOnly.csv");
+    private static final Path OUTPUT_CSV = METRICS_DIR.resolve("completedMetricsNormWithAllDistanceMetric.csv");
 
     private static final Set<Character> PLATFORM_TILES = Set.of('X','#','S','C','L','U','@','!','2','1','D','t','T','%');
     private static final Set<Character> ENEMY_TILES = Set.of('g','G','r','R','k','K','y','Y', '|', 'o', '*');
@@ -79,7 +79,7 @@ public class metricFiller {
         }
 
         String[] metrics = {"completionPct", "compressionDistance", "editDistance",
-                           "densityMetric", "leniencyMetric", "linearityRSquared", "completionPctAstarPlanning"};
+                           "densityMetric", "leniencyMetric", "linearityRSquared", "completionPctAstarDistanceMetric"};
 
         // Prepare tasks for rows that need processing
         List<RowTask> tasks = new ArrayList<>();
@@ -223,7 +223,7 @@ public class metricFiller {
         switch (metric) {
             case "completionPct":
                 return String.format("%.2f", runAgentOnLevel(levelPath));
-            case "completionPctAstarPlanning":
+            case "completionPctAstarDistanceMetric":
                 return String.format("%.2f", runAgentOnLevelAstar(levelPath));
             case "compressionDistance":
                 return String.format("%.6f", runCompression(levelPath, originalPath));
@@ -310,7 +310,7 @@ public class metricFiller {
         model.copyFromString(String.join("\n", lines));
 
         MarioGame game = new MarioGame();
-        MarioResult res = game.runGame(new MFFAgentAdapter(new mff.agents.astarPlanning.Agent()), model.getMap(),20,0,false);
+        MarioResult res = game.runGame(new MFFAgentAdapter(new mff.agents.astarDistanceMetric.Agent()), model.getMap(),20,0,false);
 
         return res.getCompletionPercentage();
     }

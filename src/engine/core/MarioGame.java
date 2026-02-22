@@ -4,6 +4,8 @@ import java.awt.image.VolatileImage;
 import java.util.ArrayList;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.JFrame;
 
@@ -50,6 +52,8 @@ public class MarioGame {
      * events that kills the player when it happens only care about type and param
      */
     private MarioEvent[] killEvents;
+
+    private volatile boolean windowClosed = false;
 
     //visualization
     private JFrame window = null;
@@ -218,6 +222,54 @@ public class MarioGame {
         return this.gameLoop(level, timer, marioState, visuals, fps);
     }
 
+
+    public void setupWindow(float scale) {
+        this.windowClosed = false;
+        this.window = new JFrame("Mario AI Framework");
+        this.render = new MarioRender(scale);
+        this.window.setContentPane(this.render);
+        this.window.pack();
+        this.window.setResizable(false);
+        this.window.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        this.window.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                windowClosed = true;
+                window.setVisible(false);
+            }
+        });
+        this.render.init();
+        this.render.addFocusListener(this.render);
+        this.window.setVisible(true);
+    }
+
+
+    public void setAgentForWindow(MarioAgent agent) {
+        this.agent = agent;
+        if (agent instanceof KeyAdapter) {
+            this.render.addKeyListener((KeyAdapter) this.agent);
+        }
+    }
+
+    public MarioResult runGameLoopOnly(String level, int timer, int marioState, int fps) {
+        if (this.windowClosed) {
+            return null;
+        }
+        return this.gameLoop(level, timer, marioState, true, fps);
+    }
+
+    public boolean isWindowClosed() {
+        return this.windowClosed;
+    }
+
+    public void disposeWindow() {
+        if (this.window != null) {
+            this.window.dispose();
+            this.window = null;
+        }
+        this.render = null;
+    }
+
     private MarioResult gameLoop(String level, int timer, int marioState, boolean visual, int fps) {
         this.world = new MarioWorld(this.killEvents);
         this.world.visuals = visual;
@@ -246,7 +298,7 @@ public class MarioGame {
 
         ArrayList<MarioEvent> gameEvents = new ArrayList<>();
         ArrayList<MarioAgentEvent> agentEvents = new ArrayList<>();
-        while (this.world.gameStatus == GameStatus.RUNNING) {
+        while (this.world.gameStatus == GameStatus.RUNNING && !this.windowClosed) {
             if (!this.pause) {
                 //get actions
                 agentTimer = new MarioTimer(MarioGame.maxTime);
